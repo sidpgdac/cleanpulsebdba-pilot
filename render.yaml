@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: cleanpulse-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.x
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CLEANER_JWT_SECRET
+        generateValue: true
+      - key: PUBLIC_APP_URL
+        sync: false

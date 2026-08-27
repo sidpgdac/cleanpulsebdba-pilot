@@ -3,14 +3,20 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
+import fastifyStatic from '@fastify/static'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 import { setupAuth } from './middleware/auth.js'
 import publicRoutes from './routes/public.js'
 import cleaningRoutes from './routes/cleaning.js'
 import supervisorRoutes from './routes/supervisor.js'
 import adminRoutes from './routes/admin.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = Fastify({
   logger: true,
@@ -44,6 +50,7 @@ app.register(cleaningRoutes, { prefix: '/api/cleaning', db, auth, cleanerSecret 
 app.register(supervisorRoutes, { prefix: '/api/supervisor', db, auth })
 app.register(adminRoutes, { prefix: '/api/admin', db, auth })
 
+
 app.setErrorHandler((error, req, reply) => {
   req.log.error(error)
 
@@ -57,6 +64,20 @@ app.setErrorHandler((error, req, reply) => {
   reply.code(error.statusCode || 500).send({
     error: error.statusCode ? error.message : 'Something went wrong'
   })
+})
+
+// Serve React Frontend
+const frontendDist = path.join(__dirname, '../../frontend/dist')
+app.register(fastifyStatic, {
+  root: frontendDist,
+  wildcard: false // disable wildcard so it doesn't conflict with API
+})
+
+app.setNotFoundHandler((req, reply) => {
+  if (req.url.startsWith('/api/')) {
+    return reply.code(404).send({ error: 'API Route Not Found' })
+  }
+  return reply.sendFile('index.html')
 })
 
 await app.listen({

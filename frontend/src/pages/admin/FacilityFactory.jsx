@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { api } from '../../lib/api'
+import { supabase } from '../../lib/api'
 
 export default function FacilityFactory() {
   const [facilities, setFacilities] = useState([])
@@ -30,7 +30,7 @@ export default function FacilityFactory() {
 
   async function loadFacilities() {
     try {
-      const { data } = await api('/api/admin/facilities')
+      const { data } = await supabase.from('facilities').select('*').order('name')
       setFacilities(data || [])
     } catch (e) {
       alert(e.message)
@@ -43,10 +43,10 @@ export default function FacilityFactory() {
     e.preventDefault()
     setBusy(true)
     try {
-      const { data } = await api('/api/admin/facilities', {
-        method: 'POST',
-        body: JSON.stringify({ code: fCode, name: fName })
-      })
+      const { data } = await supabase.from('facilities').insert({
+        code: fCode.toUpperCase(),
+        name: fName
+      }).select().single();
       await loadFacilities()
       setSelectedFacility(data.id)
       setMode('list')
@@ -65,18 +65,19 @@ export default function FacilityFactory() {
     setBusy(true)
     setSuccessMsg(null)
     try {
-      const { data } = await api('/api/admin/toilets', {
-        method: 'POST',
-        body: JSON.stringify({
-          facilityId: selectedFacility,
-          name: tName,
-          building: tBuilding,
-          floor: tFloor,
-          area: tArea,
-          numUnits: Number(tUnits),
-          cleaningIntervalMinutes: Number(tInterval)
-        })
-      })
+      const session = await supabase.auth.getSession();
+      const { data } = await supabase.rpc('create_toilet_with_qr', {
+        p_facility_id: selectedFacility,
+        p_building: tBuilding,
+        p_floor: tFloor,
+        p_area: tArea,
+        p_name: tName,
+        p_toilet_type: null,
+        p_num_units: Number(tUnits),
+        p_cleaning_interval_minutes: Number(tInterval),
+        p_actor_id: session.data.session.user.id,
+        p_public_app_url: window.location.origin
+      });
       
       setSuccessMsg({
         code: data.toilet_code,

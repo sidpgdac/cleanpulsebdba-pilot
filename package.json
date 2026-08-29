@@ -8,12 +8,16 @@
   ],
   "scripts": {
     "install:all": "npm install --workspaces",
-    "dev": "concurrently -n API,WEB -c auto \"npm run dev -w backend\" \"npm run dev -w frontend\"",
-    "dev:web": "npm run dev -w frontend",
-    "dev:api": "npm run dev -w backend",
-    "build": "npm run build -w frontend"
+    "dev": "concurrently --kill-others-on-fail --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan,green\" \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run dev -w backend",
+    "build": "npm run build -w frontend",
+    "hash-pin": "npm run hash-pin -w backend --"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
+  },
+  "dependencies": {
+    "glob": "^13.0.6"
   }
 }

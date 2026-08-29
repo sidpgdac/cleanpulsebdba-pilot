@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase, api } from '../../lib/api.js';
+import { supabase, cleanerApi, publicApi } from '../../lib/api.js';
 import { statusMeta, toiletTypeMeta, issueOptions, initials, buildEvidenceCollage } from '../../lib/data.js';
 
 export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, demo }) {
@@ -38,15 +38,9 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
   useEffect(() => {
     if (demo) return;
     
-    // Fire and forget QR scan tracking
-    api('/api/public/qr-scan', { method: 'POST', body: JSON.stringify({ toiletCode: code }) }, false).catch(() => {});
-
-    // Load toilet
-    api(`/api/public/toilets/${encodeURIComponent(code)}`, {}, false)
-      .then(body => {
-        if (!body.data) throw new Error(body.error || 'Toilet not found');
-        setToilet(body.data);
-      })
+    // Load toilet info from backend (backend also increments scan count)
+    publicApi.getToilet(code)
+      .then(data => setToilet(data))
       .catch(err => alert(err.message))
       .finally(() => setLoading(false));
   }, [code, demo]);
@@ -110,10 +104,8 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
       if (demo) {
         onUpdate({ ...toilet, derived_status: 'NEEDS_CLEANING', open_complaints: (toilet.open_complaints||0) + 1, latest_issue: issue });
       } else {
-        await api('/api/public/feedback', {
-          method: 'POST',
-          body: JSON.stringify({ toiletCode: code, category: issue })
-        }, false);
+        // Use backend API for rate-limited, validated feedback submission
+        await publicApi.submitFeedback({ toiletCode: code, category: issue });
       }
       setStep('thanks');
     } catch (e) {
@@ -126,17 +118,20 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
   async function loadCleaners() {
     setStep('cleaner');
     if (demo) {
-      setCleaners([{ id: 'c1', full_name: 'Amit Patel', phone: '9876543210' }]);
+      setCleaners([{ id: 'c1', full_name: 'Amit Patel' }]);
       return;
     }
     try {
-      const res = await api(`/api/public/toilets/${code}/cleaners`, {}, false);
-      setCleaners(res.data || []);
+      // Use backend API — backend fetches from service role, not anon
+      const { cleaners: list } = await cleanerApi.list(code);
+      setCleaners(list || []);
     } catch (e) {
-      alert('Could not load cleaners');
+      alert('Could not load cleaners: ' + e.message);
     }
   }
 
+  // PIN entry — we just advance to the ready screen; actual PIN verification
+  // happens server-side when startCleaning() is called (prevents double bcrypt).
   async function verifyPin() {
     if (pin.length !== 4) return;
     setBusy(true);
@@ -151,17 +146,8 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
           setPin('');
         }
       } else {
-        const result = await api('/api/cleaning/login', {
-          method: 'POST',
-          body: JSON.stringify({ toiletCode: code, cleanerId: selectedCleaner.id, pin })
-        }, false);
-        setCleanerToken(result.token);
-        if (result.activeSession) {
-          setSession(result.activeSession);
-          setStep('cleaning');
-        } else {
-          setStep('ready');
-        }
+        // Move to ready screen — PIN is verified when startCleaning is called
+        setStep('ready');
       }
     } catch (e) {
       setPinError(true);
@@ -171,6 +157,7 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
     }
   }
 
+
   async function startCleaning() {
     setBusy(true);
     try {
@@ -178,15 +165,23 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
         setSession({ started_at: new Date().toISOString() });
         setStep('cleaning');
       } else {
-        const result = await api('/api/cleaning/start', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${cleanerToken}` },
-          body: JSON.stringify({ toiletCode: code, idempotencyKey: crypto.randomUUID() })
-        }, false);
-        setSession(result.data);
+        // Backend verifies PIN with bcrypt + rate limiting + lockout protection
+        const result = await cleanerApi.start({
+          toiletCode: code,
+          cleanerId: selectedCleaner.id,
+          pin,
+          idempotencyKey: crypto.randomUUID(),
+        });
+        setSession(result.session);
+        setCleanerToken(result.cleaner_token); // Store JWT for complete step
         setStep('cleaning');
       }
     } catch (e) {
+      if (e.message.toLowerCase().includes('incorrect pin') || e.message.toLowerCase().includes('401')) {
+        setPinError(true);
+        setPin('');
+        setStep('pin');
+      }
       alert(e.message);
     } finally {
       setBusy(false);
@@ -198,14 +193,13 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
     try {
       if (demo) {
         if (notify) notify('Marathi instructions playing');
-      } else {
-        const res = await fetch('/api/public/audio/instructions'); // Assuming this exists or falls back
-        if (!res.ok) throw new Error('Audio not found');
-        const blob = await res.blob();
-        const a = new Audio(URL.createObjectURL(blob));
-        setMarathiAudio(a);
-        a.play();
+        return;
       }
+      // Backend serves the audio file — properly cached and no 404 anymore
+      const audioUrl = publicApi.audioUrl();
+      const a = new Audio(audioUrl);
+      setMarathiAudio(a);
+      a.play();
     } catch (e) {
       alert('Audio instructions not available.');
     }
@@ -213,16 +207,11 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
 
   async function uploadFile(file, kind) {
     if (demo) return 'demo-path';
-    const signed = await api(`/api/cleaning/${session.id}/upload-url`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${cleanerToken}` },
-      body: JSON.stringify({ kind, contentType: file.type || 'image/jpeg' })
-    }, false);
-    const { error } = await supabase.storage
-      .from('cleaning-evidence')
-      .uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type || 'image/jpeg' });
+    const ext = file.type?.includes('png') ? 'png' : 'jpg';
+    const path = `${session.facility_id}/${session.toilet_id}/${session.id}/site-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('cleaning-evidence').upload(path, file, { contentType: file.type || 'image/jpeg' });
     if (error) throw error;
-    return signed.path;
+    return path;
   }
 
   async function completeCleaning() {
@@ -233,12 +222,19 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
         onUpdate({ ...toilet, derived_status: 'CLEAN', last_cleaned_at: new Date().toISOString(), latest_issue: null, attention_minutes: null });
         setStep('complete');
       } else {
-        // Convert base64 collage to Blob
+        if (!cleanerToken) {
+          return alert('Session token expired. Please restart the cleaning process.');
+        }
+
+        // Convert base64 collage to a File for upload
         const fetchResponse = await fetch(collageData);
         const collageBlob = await fetchResponse.blob();
-        
-        const sitePhotoPath = await uploadFile(collageBlob, 'site');
-        const selfiePath = ''; // We don't need a separate selfie since it's in the collage
+        const collageFile = new File([collageBlob], 'evidence.jpg', { type: 'image/jpeg' });
+
+        // Upload via backend (MIME validated, service-role upload — no storage credentials in browser)
+        const { path: sitePhotoPath } = await cleanerApi.uploadPhoto(collageFile, cleanerToken);
+
+        // GPS (optional, best effort)
         let gps = null;
         try {
           gps = await new Promise(res => {
@@ -249,11 +245,17 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
             );
           });
         } catch {}
-        await api(`/api/cleaning/${session.id}/complete`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${cleanerToken}` },
-          body: JSON.stringify({ sitePhotoPath, selfiePath, gps })
-        }, false);
+
+        // Complete via backend using the short-lived cleaner JWT (no PIN re-entry)
+        await cleanerApi.complete({
+          cleanerToken,
+          sitePhotoPath,
+          selfiePath: '',
+          lat: gps?.lat || null,
+          lng: gps?.lng || null,
+          accuracy: gps?.accuracy || null,
+        });
+
         setStep('complete');
       }
     } catch (e) {

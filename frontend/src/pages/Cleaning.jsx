@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api.js';
+import { supabase } from '../lib/api.js';
 import { relativeTime } from '../lib/data.js';
 
 function KpiStrip({ items }) {
@@ -23,8 +23,8 @@ export default function Cleaning({ facilityId, notify }) {
   useEffect(() => {
     if (!facilityId) return;
     setLoading(true);
-    api(`/api/admin/cleaning-sessions?facilityId=${facilityId}`)
-      .then(r => setSessions(r.data || []))
+    supabase.from('cleaning_sessions').select('*, toilets(name, code, facility_id), cleaners(full_name)').not('completed_at', 'is', null).eq('facility_id', facilityId).order('completed_at', { ascending: false }).limit(50)
+      .then(({ data }) => setSessions(data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [facilityId]);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import QRCode from 'react-qr-code'
 import { Search, Printer, Download, Link } from 'lucide-react'
-import { api } from '../../lib/api'
+import { supabase } from '../../lib/api'
 
 export default function QRCentre() {
   const [facilities, setFacilities] = useState([])
@@ -28,7 +28,7 @@ export default function QRCentre() {
 
   async function loadFacilities() {
     try {
-      const { data } = await api('/api/admin/facilities')
+      const { data } = await supabase.from('facilities').select('*').order('name');
       setFacilities(data || [])
       if (data && data.length > 0) {
         setSelectedFacility(data[0].id)
@@ -42,7 +42,7 @@ export default function QRCentre() {
 
   async function loadQRs(facilityId) {
     try {
-      const { data } = await api(`/api/admin/qr?facilityId=${facilityId}`)
+      const { data } = await supabase.from('qr_codes').select('*, toilets(name,code,building,floor,area)').eq('facility_id', facilityId).order('created_at', { ascending: false })
       setQrs(data || [])
     } catch (e) {
       alert(e.message)

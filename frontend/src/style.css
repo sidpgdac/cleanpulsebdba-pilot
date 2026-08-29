@@ -84,3 +84,110 @@ nav button:hover { background:#f4f8f6; color:var(--green); } nav button span{wid
 .pin-display { display: flex; justify-content: center; gap: 14px; margin: 18px 0 8px; }
 .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); background: transparent; transition: .15s; }
 .pin-dot.filled { background: var(--green); border-color: var(--green); }
+
+/* ─── KPI Strip (Dashboard + Complaints) ─── */
+.kpi-strip { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.kpi-pill { display: flex; flex-direction: column; align-items: center; gap: 3px; background: white; border: 1px solid var(--line); border-radius: 11px; padding: 12px 18px; min-width: 90px; cursor: pointer; user-select: none; transition: .15s; }
+.kpi-pill strong { font-size: 22px; font-weight: 800; line-height: 1; }
+.kpi-pill span { font-size: 9px; color: var(--muted); font-weight: 600; }
+.kpi-pill.green strong { color: var(--green); }
+.kpi-pill.red strong { color: var(--red); }
+.kpi-pill.amber strong { color: var(--amber); }
+.kpi-pill.green:hover, .kpi-pill.green.active { background: var(--green-soft); border-color: #9dc7b6; }
+.kpi-pill.red:hover, .kpi-pill.red.active { background: var(--red-soft); border-color: #e4b0aa; }
+.kpi-pill.amber:hover, .kpi-pill.amber.active { background: var(--amber-soft); border-color: #d4b97a; }
+
+/* ─── Toilet Wall (Dashboard) ─── */
+.toilet-wall-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.tw-search { height: 38px; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: white; min-width: 260px; flex: 1; }
+.tw-search span { color: var(--muted); font-size: 16px; }
+.tw-search input { border: 0; outline: 0; font-size: 11px; flex: 1; }
+.tw-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn { border: 1px solid var(--line); background: white; border-radius: 8px; height: 36px; padding: 0 12px; font-size: 10px; color: var(--muted); cursor: pointer; font-weight: 600; }
+.filter-btn:hover { border-color: #9dc7b6; color: var(--green); }
+.filter-active { border: 1px solid var(--green); background: var(--green-soft); border-radius: 8px; height: 36px; padding: 0 12px; font-size: 10px; color: var(--green); cursor: pointer; font-weight: 700; }
+.toilet-wall { display: flex; flex-direction: column; gap: 10px; }
+
+/* ─── Toilet Card (simple list style) ─── */
+.toilet-card-simple { width: 100%; border: 1px solid var(--line); background: white; border-radius: 12px; padding: 0; display: flex; align-items: stretch; text-align: left; cursor: pointer; transition: .18s; overflow: hidden; }
+.toilet-card-simple:hover { box-shadow: 0 6px 20px rgba(14,38,28,.10); transform: translateY(-1px); }
+.tc-stripe { width: 5px; min-height: 100%; flex-shrink: 0; }
+.toilet-card-simple.clean .tc-stripe { background: var(--green); }
+.toilet-card-simple.alert .tc-stripe { background: var(--red); }
+.toilet-card-simple.due .tc-stripe { background: #d49316; }
+.toilet-card-simple.dark .tc-stripe { background: #35413b; }
+.tc-body { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.tc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.tc-name { font-size: 13px; font-weight: 700; display: block; }
+.tc-loc { font-size: 10px; color: var(--muted); display: block; margin-top: 3px; }
+.tc-badge { font-size: 9px; font-weight: 700; padding: 5px 9px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+.tc-badge.clean { background: var(--green-soft); color: var(--green); }
+.tc-badge.alert { background: var(--red-soft); color: var(--red); }
+.tc-badge.due { background: var(--amber-soft); color: var(--amber); }
+.tc-badge.dark { background: #edf0ee; color: #35413b; }
+.tc-bottom { display: flex; gap: 16px; }
+.tc-bottom small { font-size: 9px; color: var(--muted); }
+
+/* ─── Empty state ─── */
+.empty-state { text-align: center; padding: 60px 24px; background: white; border: 1px solid var(--line); border-radius: 13px; }
+.empty-state h2 { font-family: Georgia, serif; font-size: 22px; margin: 12px 0 8px; }
+.empty-state p { color: var(--muted); font-size: 11px; margin: 0 0 20px; }
+
+/* ─── Tab bar (Facilities + Complaints) ─── */
+.tab-bar { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 20px; }
+.tab-btn { border: 0; background: none; padding: 10px 16px; font-size: 11px; color: var(--muted); cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab-btn:hover { color: var(--green); }
+.tab-active { border: 0; background: none; padding: 10px 16px; font-size: 11px; color: var(--green); cursor: pointer; font-weight: 700; border-bottom: 2px solid var(--green); margin-bottom: -2px; }
+
+/* ─── Data table (Facilities toilet list) ─── */
+.data-table { border-collapse: collapse; width: 100%; min-width: 720px; }
+.data-table th { text-align: left; padding: 11px 16px; background: #f7faf8; color: #819087; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.data-table td { padding: 13px 16px; border-bottom: 1px solid #e9efec; vertical-align: middle; }
+.data-table tr:hover td { background: #f9fbfa; }
+.data-table tr:last-child td { border-bottom: 0; }
+.status-dot-label { display: flex; align-items: center; font-size: 10px; font-weight: 600; }
+
+/* ─── Add Toilet Form (Facilities) ─── */
+.add-toilet-form { padding: 24px; max-width: 760px; }
+.toilet-created-flash { display: flex; align-items: center; gap: 12px; background: var(--green-soft); border: 1px solid #9dc7b6; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
+.toilet-created-flash span { font-size: 20px; color: var(--green); }
+.toilet-created-flash b { font-size: 12px; display: block; color: var(--green); }
+.toilet-created-flash small { font-size: 9px; color: var(--muted); font-family: monospace; }
+.toilet-created-flash button.primary { margin-left: auto; flex-shrink: 0; }
+
+/* ─── Complaints list ─── */
+.complaints-list { display: flex; flex-direction: column; gap: 10px; }
+.complaint-row { display: flex; align-items: center; gap: 14px; padding: 16px; border-left: 4px solid transparent; }
+.complaint-row.complaint-open { border-left-color: var(--red); }
+.complaint-row.complaint-maint { border-left-color: #35413b; }
+.complaint-row.complaint-resolved { border-left-color: var(--green); opacity: .75; }
+.complaint-icon { font-size: 22px; width: 40px; text-align: center; flex-shrink: 0; }
+.complaint-body { flex: 1; min-width: 0; }
+.complaint-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.complaint-category { font-size: 12px; font-weight: 700; }
+.complaint-kind-badge { font-size: 8px; padding: 3px 7px; border-radius: 7px; font-weight: 700; }
+.complaint-kind-badge.red { background: var(--red-soft); color: var(--red); }
+.complaint-kind-badge.ink { background: #edf0ee; color: #35413b; }
+.complaint-toilet { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; font-size: 10px; }
+.complaint-meta { display: flex; gap: 12px; font-size: 9px; color: var(--muted); }
+.complaint-action { flex-shrink: 0; }
+
+/* ─── Mobile tweaks for simplified pages ─── */
+@media (max-width: 760px) {
+  .kpi-strip { gap: 7px; }
+  .kpi-pill { min-width: 70px; padding: 10px 12px; }
+  .kpi-pill strong { font-size: 18px; }
+  .toilet-wall-controls { flex-direction: column; align-items: stretch; }
+  .tw-search { min-width: 0; }
+  .tc-top { flex-wrap: wrap; }
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+  .complaints-list { gap: 8px; }
+  .complaint-row { flex-wrap: wrap; }
+  .complaint-action { width: 100%; }
+  .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--line); z-index: 10; }
+  .mobile-nav button { flex: 1; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px; font-size: 9px; color: var(--muted); cursor: pointer; position: relative; }
+  .mobile-nav button.active { color: var(--green); }
+  .mobile-nav button span { font-size: 20px; }
+  .mobile-badge { position: absolute; top: 6px; right: calc(50% - 18px); background: var(--red); color: white; font-size: 8px; border-radius: 10px; padding: 2px 5px; }
+}
+

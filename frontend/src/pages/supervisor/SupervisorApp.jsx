@@ -109,12 +109,27 @@ export default function SupervisorApp() {
     setProfile(p)
 
     try {
-      const [a, b] = await Promise.all([
-        api(`/api/supervisor/overview?facilityId=${p.facility_id}`),
-        api(`/api/supervisor/toilets?facilityId=${p.facility_id}`)
-      ])
-      setOverview(a.data)
-      setRows(b.data)
+      const { data: bData, error } = await supabase
+        .from('supervisor_toilet_view')
+        .select('*')
+        .eq('facility_id', p.facility_id)
+        .order('attention_minutes', { ascending: false, nullsFirst: false })
+
+      if (error) throw error;
+
+      let result = { not_cleaned: 0, overdue: 0, cleaning_now: 0, clean: 0, maintenance: 0, open_complaints: 0 }
+      for (const t of bData || []) {
+        if (['NOT_CLEANED', 'NEEDS_CLEANING'].includes(t.derived_status)) result.not_cleaned++
+        if (t.derived_status === 'OVERDUE') result.overdue++
+        if (t.derived_status === 'CLEANING') result.cleaning_now++
+        if (t.derived_status === 'CLEAN') result.clean++
+        if (t.derived_status === 'MAINTENANCE') result.maintenance++
+        result.open_complaints += Number(t.open_complaints || 0)
+      }
+      result.action_required = result.not_cleaned + result.overdue + result.maintenance
+
+      setOverview(result)
+      setRows(bData || [])
     } catch(err) {
       console.error(err)
     }

@@ -226,12 +226,43 @@ nav button em { margin-left: auto; background: var(--border-medium); color: var(
 /* ─── MOBILE QR FLOW ─── */
 .phone-stage { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #000; }
 .phone-frame { width: 390px; height: 844px; background: var(--bg-page); border-radius: 40px; border: 8px solid #333; overflow: hidden; position: relative; }
-.mobile-brand { padding: 1.5rem; background: var(--bg-card); text-align: center; border-bottom: 1px solid var(--border-light); }
-.mobile-brand b { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
-.mobile-page { padding: 2rem 1.5rem; height: calc(100% - 70px); overflow-y: auto; display: flex; flex-direction: column; }
-.pin-group { text-align: center; margin-top: auto; margin-bottom: auto; }
-.pin-group input { width: 100%; font-size: 1.5rem; letter-spacing: 0.5em; text-align: center; padding: 1rem; margin-bottom: 1rem; font-family: monospace; }
+.qrPage { min-height: 100vh; background: var(--bg-page); display: flex; flex-direction: column; }
 
+.mobile-header { padding: 1.5rem; background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); }
+.mobile-header b { display: block; font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+.mobile-header small { color: var(--text-muted); font-size: 0.75rem; }
+
+.mobile-page { padding: 2rem 1.5rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.mobile-view { display: flex; flex-direction: column; gap: 2rem; flex: 1; }
+
+.qr-hero-card { text-align: center; margin-bottom: 1rem; }
+.qr-hero-card b { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; margin-bottom: 1rem; }
+.qr-hero-card h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
+.qr-hero-card p { color: var(--text-muted); font-size: 0.9rem; }
+
+.action-grid { display: flex; flex-direction: column; gap: 1rem; }
+.action-btn { background: var(--bg-card); border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem; text-align: left; cursor: pointer; color: var(--text-main); width: 100%; transition: all 0.2s; }
+.action-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+.action-btn div { flex: 1; }
+.action-btn b { display: block; font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
+.action-btn small { color: var(--text-muted); font-size: 0.8rem; }
+.action-btn.outline { background: transparent; border-style: dashed; }
+
+.qr-footer { margin-top: auto; text-align: center; padding-top: 2rem; }
+.qr-footer small { color: var(--border-medium); font-family: monospace; font-size: 0.7rem; }
+
+/* Mobile Pin Screen */
+.pin-display { display: flex; justify-content: center; gap: 1rem; margin: 2rem 0; }
+.pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-medium); }
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 300px; margin: 0 auto; }
+.pin-grid button { background: var(--bg-card); border: 1px solid var(--border-light); font-size: 1.5rem; font-weight: 500; height: 72px; border-radius: var(--radius-md); color: var(--text-main); }
+.pin-grid button:active { background: var(--bg-hover); transform: scale(0.95); }
+
+.mobile-heading { text-align: center; margin-bottom: 2rem; }
+.mobile-heading h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+.mobile-heading p { color: var(--text-muted); font-size: 0.9rem; }
 /* ─── MOBILE RESPONSIVENESS ─── */
 @media (max-width: 768px) {
   .workspace { padding: 1.5rem 1rem; }

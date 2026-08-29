@@ -476,6 +476,18 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                   <button disabled={busy} onClick={() => handlePinInput(pin + '0')}>0</button>
                   <button disabled={busy} onClick={() => handlePinInput(pin.slice(0, -1))} style={{ fontSize: 14 }}>Del</button>
                 </div>
+                
+                <div style={{ textAlign: 'center', marginTop: 24 }}>
+                  <button 
+                    className="mobile-primary" 
+                    style={{ width: '100%', maxWidth: 300, margin: '0 auto', opacity: pin.length === 4 ? 1 : 0.5 }} 
+                    disabled={pin.length !== 4 || busy} 
+                    onClick={verifyPin}
+                  >
+                    {busy ? 'Verifying...' : 'Submit PIN'}
+                  </button>
+                </div>
+                
                 {demo && <p className="cleaner-help" style={{ marginTop: 20 }}>Demo PIN: 1234</p>}
               </motion.div>
             )}

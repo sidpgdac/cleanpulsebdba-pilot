@@ -294,325 +294,496 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
     else window.location.href = toilet.base_url || 'https://www.mcgm.gov.in/';
   }
 
+  const statusKey = toilet.derived_status || toilet.status || 'CLEAN';
+  const statusClass = (statusKey === 'CLEAN') ? 'green' : (statusKey === 'NEEDS_CLEANING' || statusKey === 'CLEANING') ? 'orange' : 'red';
+
   return (
     <div className={demo ? 'experience-backdrop' : ''}>
       <div className={demo ? 'phone-stage' : ''}>
-        {demo && <p className="demo-caption">CITIZEN & CLEANER JOURNEY</p>}
-        
-        <div className={demo ? 'phone-frame' : 'qrPage'} style={demo ? {} : { padding: 0 }}>
+        <div className={demo ? 'phone-frame' : 'qrPage'}>
+          {/* ─── HEADER ─── */}
           <header className="mobile-header">
             <div>
               <b>CleanPulse</b>
-              <small>BDBA Hospital</small>
+              <small>BDBA Hospital · {toilet.facility_name || 'Facility'}</small>
             </div>
-            {demo && <button className="ghost" onClick={onClose}><X size={20} /></button>}
+            {demo && <button className="ghost" onClick={onClose} style={{ padding: '0.4rem' }}><X size={18} /></button>}
           </header>
 
           <main className="mobile-page">
-            {step === 'landing' && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mobile-view">
-                <div className="qr-hero">
-                  <div className="qr-hero-card">
-                    <b style={{ color: sm.color, background: `${sm.dot}10` }}>{sm.label}</b>
+            <AnimatePresence mode="wait">
+
+              {/* ─── LANDING ─── */}
+              {step === 'landing' && (
+                <motion.div
+                  key="landing"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                  className="mobile-view"
+                  style={{ gap: 0 }}
+                >
+                  <div className="qr-hero">
+                    <div className={`status-badge ${statusClass}`}>
+                      <span className="dot" />
+                      {sm.label}
+                    </div>
                     <h1>{toilet.name}</h1>
                     <p>{[toilet.floor, toilet.area].filter(Boolean).join(' · ')}</p>
-                  </div>
-                </div>
-
-                <div className="mobile-body">
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Help us maintain this facility</p>
-                  
-                  <div className="action-grid">
-                    <button className="action-btn" onClick={() => setStep('feedback')}>
-                      <Smile size={24} color="var(--accent)" />
-                      <div><b>Submit Feedback</b><small>Rate cleanliness</small></div>
-                      <ArrowRight size={16} color="var(--text-muted)" />
-                    </button>
-                    
-                    <button className="action-btn outline" onClick={loadCleaners}>
-                      <Sparkles size={24} color="var(--ink)" />
-                      <div><b>Staff Login</b><small>Log cleaning cycle</small></div>
-                      <ArrowRight size={16} color="var(--text-muted)" />
-                    </button>
-                  </div>
-
-                  <div className="qr-footer">
                     <small>ID: {code} · {tm.label}</small>
                   </div>
-                </div>
-              </motion.div>
-            )}
 
-            {step === 'feedback' && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="mobile-view feedback-flow">
-                <div className="mobile-body">
-                  <h2>How is the cleanliness?</h2>
-                  <div className="rating-options">
-                    <button className={rating === 'good' ? 'selected' : ''} onClick={() => setRating('good')}>
-                      <Smile size={32} color={rating === 'good' ? 'var(--green)' : 'var(--text-muted)'} />
-                      <div><b>Clean & functioning</b><small>Everything is good</small></div>
-                    </button>
-                    <button className={rating === 'bad' ? 'selected' : ''} onClick={() => setRating('bad')}>
-                      <Meh size={32} color={rating === 'bad' ? 'var(--orange)' : 'var(--text-muted)'} />
-                      <div><b>Needs attention</b><small>Wet floor, no soap, or dirty</small></div>
-                    </button>
-                    <button className={rating === 'urgent' ? 'selected' : ''} onClick={() => setRating('urgent')}>
-                      <Frown size={32} color={rating === 'urgent' ? 'var(--red)' : 'var(--text-muted)'} />
-                      <div><b>Urgent problem</b><small>Blocked, broken, or unusable</small></div>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 'issue' && (
-              <>
-                <div className="mobile-heading">
-                  <h1>What is wrong?</h1>
-                  <p>Select the main issue.</p>
-                </div>
-                <div className="issue-grid">
-                  {issueOptions.map(opt => (
-                    <button key={opt[1]} className={issue === opt[1] ? 'selected' : ''} onClick={() => setIssue(opt[1])}>
-                      <span>{opt[0]}</span>
-                      <b>{opt[1]}</b>
-                      <small>{opt[2]}</small>
-                    </button>
-                  ))}
-                </div>
-                <button className="mobile-primary" disabled={!issue} onClick={() => setStep('location')}>Next →</button>
-              </>
-            )}
-
-            {step === 'location' && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="mobile-view feedback-flow">
-                <div className="mobile-heading">
-                  <h1>Where exactly?</h1>
-                  <p>Help staff find the problem.</p>
-                </div>
-                <div className="location-options">
-                  <button className={unit === 'whole' ? 'selected' : ''} onClick={() => setUnit('whole')}>
-                    <Grid size={24} color={unit === 'whole' ? 'var(--accent)' : 'var(--text-muted)'} />
-                    <div><b>Whole block</b><small>General issue</small></div>
-                  </button>
-                  {Array.from({ length: toilet.total_units || 4 }).map((_, i) => (
-                    <button key={i} className={unit === `U${i+1}` ? 'selected' : ''} onClick={() => setUnit(`U${i+1}`)}>
-                      <span className="unit-number">{i+1}</span>
-                      <div><b>Cubicle {i+1}</b><small>Internal unit</small></div>
-                    </button>
-                  ))}
-                </div>
-                <label className="optional-photo">
-                  <Camera size={24} color="var(--text-muted)" />
-                  <div><b>Add photo (optional)</b><small>Helps teams fix faster</small></div>
-                  <input type="file" accept="image/*" />
-                </label>
-                <button className="mobile-primary" disabled={busy} onClick={submitFeedback}>
-                  {busy ? 'Submitting...' : 'Submit report'}
-                </button>
-              </motion.div>
-            )}
-
-            {step === 'thanks' && (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="success-page">
-                <div className="success-check"><CheckCircle size={48} color="var(--green)" /></div>
-                <h1>Thank You</h1>
-                <p>Your report has been logged and assigned to the facility management team.</p>
-                
-                <div className="ticket-receipt">
-                  <small>TICKET ID</small>
-                  <b>CP-{Math.random().toString(36).slice(2, 10).toUpperCase()}</b>
-                  <span>● Active and routed</span>
-                </div>
-                
-                <div className="trust-grid">
-                  <span><small>Location</small><b>{toilet.name}</b></span>
-                  <span><small>Issue</small><b>{rating === 'clean' ? 'No issues reported' : issue}</b></span>
-                </div>
-                
-                <button className="mobile-primary" onClick={closeApp}>Close</button>
-              </motion.div>
-            )}
-
-            {step === 'cleaner' && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                <div className="mobile-heading">
-                  <h1>Who is cleaning?</h1>
-                  <p>Select your name to begin duty.</p>
-                </div>
-                <div className="cleaner-list">
-                  {cleaners.map(c => (
-                    <button key={c.id} onClick={() => { setSelectedCleaner(c); setStep('pin'); }}>
-                      <span className="avatar-icon">{initials(c.full_name)}</span>
-                      <div><b>{c.full_name}</b><small>Staff Cleaner</small></div>
-                      <ArrowRight size={16} color="var(--text-muted)" />
-                    </button>
-                  ))}
-                  {cleaners.length === 0 && <div className="cleaner-help">No cleaners assigned to this facility.</div>}
-                </div>
-                <button className="trust-link" onClick={() => setStep('landing')}>Cancel</button>
-              </motion.div>
-            )}
-
-            {step === 'pin' && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <div className="mobile-heading location-block" style={{ textAlign: 'center' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, fontSize: 24, fontWeight: 600, background: 'var(--green-soft)', color: 'var(--green)', padding: 12, borderRadius: 32, marginBottom: 16 }}>{initials(selectedCleaner?.full_name)}</span>
-                  <h1>{selectedCleaner?.full_name}</h1>
-                  <p>Enter your 4-digit PIN</p>
-                </div>
-                
-                {pinError && <div style={{ color: 'var(--red)', fontSize: 10, textAlign: 'center', background: 'var(--red-bg)', padding: 10, borderRadius: 8 }}>Incorrect PIN. Please try again.</div>}
-                
-                <div className="pin-display">
-                  {[0,1,2,3].map(i => <div key={i} className={`pin-dot ${pin.length > i ? 'filled' : ''}`} />)}
-                </div>
-                
-                <div className="pin-grid">
-                  {[1,2,3,4,5,6,7,8,9].map(n => (
-                    <button key={n} disabled={busy} onClick={() => handlePinInput(pin + n)}>{n}</button>
-                  ))}
-                  <button disabled={busy} onClick={() => setStep('cleaner')} style={{ fontSize: 14 }}>Back</button>
-                  <button disabled={busy} onClick={() => handlePinInput(pin + '0')}>0</button>
-                  <button disabled={busy} onClick={() => handlePinInput(pin.slice(0, -1))} style={{ fontSize: 14 }}>Del</button>
-                </div>
-                
-                <div style={{ textAlign: 'center', marginTop: 24 }}>
-                  <button 
-                    className="mobile-primary" 
-                    style={{ width: '100%', maxWidth: 300, margin: '0 auto', opacity: pin.length === 4 ? 1 : 0.5 }} 
-                    disabled={pin.length !== 4 || busy} 
-                    onClick={verifyPin}
-                  >
-                    {busy ? 'Verifying...' : 'Submit PIN'}
-                  </button>
-                </div>
-                
-                {demo && <p className="cleaner-help" style={{ marginTop: 20 }}>Demo PIN: 1234</p>}
-              </motion.div>
-            )}
-
-            {step === 'ready' && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                <div className="mobile-heading" style={{ textAlign: 'center' }}>
-                  <div style={{ display: 'inline-flex', padding: 20, borderRadius: 40, background: 'var(--green-bg)', marginBottom: 20 }}>
-                    <Sparkles size={40} color="var(--green)" />
-                  </div>
-                  <h1 style={{ fontSize: 24 }}>Ready to clean</h1>
-                  <p>You have been assigned to this block.</p>
-                </div>
-                
-                <div className="cleaning-location">
-                  <div className="location-icon">{tm.icon}</div>
-                  <div><b>{toilet.name}</b><small>{toilet.code} · {toilet.floor}</small></div>
-                </div>
-                
-                {status === 'alert' && toilet.latest_issue && (
-                  <div className="linked-issue">
-                    <X size={20} color="var(--red)" />
-                    <div><b>Citizen report: {toilet.latest_issue}</b><small>Ensure this is resolved.</small></div>
-                  </div>
-                )}
-                
-                <div className="assignment-info">
-                  <span><small>Assigned to</small><b>{selectedCleaner?.full_name}</b></span>
-                  <span><small>Target time</small><b>15 minutes</b></span>
-                </div>
-                
-                <button className="start-cleaning" disabled={busy} onClick={startCleaning}>
-                  {busy ? 'Starting...' : 'START CLEANING'}
-                </button>
-              </motion.div>
-            )}
-
-            {step === 'cleaning' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="mobile-heading" style={{ marginBottom: 5 }}>
-                  <p>CLEANING IN PROGRESS</p>
-                  <div className="cleaning-timer">
-                    {Math.floor(duration / 60).toString().padStart(2, '0')}:{(duration % 60).toString().padStart(2, '0')}
-                    <span>MINUTES</span>
-                  </div>
-                </div>
-                
-                <div className="reminder-grid">
-                  <span><b><Sparkles size={20} color="var(--accent)" /></b><small>Floor mopped</small></span>
-                  <span><b><Droplets size={20} color="var(--accent)" /></b><small>Basin wiped</small></span>
-                  <span><b><Trash2 size={20} color="var(--accent)" /></b><small>Bins emptied</small></span>
-                  <span><b><Wind size={20} color="var(--accent)" /></b><small>Smell removed</small></span>
-                </div>
-                
-                <button className="audio-button" onClick={playMarathiReminder}>
-                  <Volume2 size={16} /> Play instructions in Marathi
-                </button>
-                
-                <div className="privacy-warning">
-                  <b>Photo evidence required</b>
-                  <span>Include yourself and the clean facility in the photos.</span>
-                </div>
-                
-                {collageData ? (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                    <div className="collage-preview">
-                      <img src={collageData} alt="Collage" />
-                      <span><CheckCircle size={16} /> Evidence ready</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <button className="secondary" style={{ flex: 1 }} onClick={() => setCollageData(null)}>Retake</button>
-                      <button className="complete-button" style={{ flex: 2 }} disabled={busy} onClick={completeCleaning}>
-                        {busy ? 'Uploading...' : <><CheckCircle size={16} /> COMPLETE CYCLE</>}
+                  <div className="step-stack" style={{ marginTop: '1.5rem', flex: 1 }}>
+                    <div className="action-grid">
+                      <button className="action-btn" onClick={() => setStep('feedback')}>
+                        <div className="icon-wrap accent"><Smile size={20} /></div>
+                        <div className="text-group">
+                          <b>Submit Feedback</b>
+                          <small>Rate cleanliness & report issues</small>
+                        </div>
+                        <ArrowRight size={16} className="arrow" />
+                      </button>
+                      <button className="action-btn" onClick={loadCleaners}>
+                        <div className="icon-wrap light"><Sparkles size={20} /></div>
+                        <div className="text-group">
+                          <b>Staff Login</b>
+                          <small>Log your cleaning cycle</small>
+                        </div>
+                        <ArrowRight size={16} className="arrow" />
                       </button>
                     </div>
-                  </motion.div>
-                ) : (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                      <button className={photoView === 'site' ? 'mobile-primary' : 'secondary'} style={{ flex: 1 }} onClick={() => setPhotoView('site')}>1. Clean site {siteData ? <CheckCircle size={12} /> : ''}</button>
-                      <button className={photoView === 'selfie' ? 'mobile-primary' : 'secondary'} style={{ flex: 1, opacity: siteData ? 1 : 0.4 }} onClick={() => siteData && setPhotoView('selfie')}>2. Selfie {selfieData ? <CheckCircle size={12} /> : ''}</button>
-                    </div>
-                    
-                    {photoView === 'site' && (
-                      <label className={`camera-box ${siteData ? 'has-photo' : ''}`}>
-                        {siteData ? <img src={siteData} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : (
-                          <><span><Camera size={32} color="var(--text-muted)" /></span><b>Take photo of clean facility</b><small>Ensure floor and cubicles are visible</small></>
-                        )}
-                        <input type="file" accept="image/*" capture="environment" onChange={e => setSitePhoto(e.target.files[0])} />
-                      </label>
-                    )}
-                    
-                    {photoView === 'selfie' && (
-                      <label className={`camera-box ${selfieData ? 'has-photo' : ''}`}>
-                        {selfieData ? <img src={selfieData} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : (
-                          <><span><User size={32} color="var(--text-muted)" /></span><b>Take selfie in uniform</b><small>Must match registered face</small></>
-                        )}
-                        <input type="file" accept="image/*" capture="user" onChange={e => setSelfie(e.target.files[0])} />
-                      </label>
-                    )}
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
+                  </div>
+                </motion.div>
+              )}
 
-            {step === 'complete' && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="success-page" style={{ paddingTop: 30 }}>
-                <div className="success-check"><CheckCircle size={48} color="var(--green)" /></div>
-                <h1>Duty Complete</h1>
-                <p>Excellent work. Your cycle is recorded.</p>
-                
-                {collageData && <img src={collageData} className="completion-collage" alt="Evidence" />}
-                
-                <div className="completion-card">
-                  <span><small>Cleaner</small><b>{selectedCleaner?.full_name}</b></span>
-                  <span><small>Duration</small><b>{Math.max(1, Math.round(duration / 60))} minutes</b></span>
-                  <span><small>Facility</small><b>{toilet.name}</b></span>
-                </div>
-                
-                <button className="mobile-primary" onClick={closeApp}>Close Shift</button>
-              </motion.div>
-            )}
+              {/* ─── FEEDBACK / RATING ─── */}
+              {step === 'feedback' && (
+                <motion.div
+                  key="feedback"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="step-stack"
+                >
+                  <div className="step-title">
+                    <h2>How is the cleanliness?</h2>
+                    <p>Your anonymous feedback is reviewed daily.</p>
+                  </div>
+                  <div className="rating-options">
+                    <button className={`rating-btn ${rating === 'good' ? 'selected good' : ''}`} onClick={() => { setRating('good'); setStep('thanks'); }}>
+                      <div className="icon"><Smile size={24} color={rating === 'good' ? 'var(--green)' : 'var(--text-tertiary)'} /></div>
+                      <div className="info">
+                        <b>Clean &amp; functioning</b>
+                        <small>Everything is in order</small>
+                      </div>
+                    </button>
+                    <button className={`rating-btn ${rating === 'bad' ? 'selected medium' : ''}`} onClick={() => { setRating('bad'); setStep('issue'); }}>
+                      <div className="icon"><Meh size={24} color={rating === 'bad' ? 'var(--orange)' : 'var(--text-tertiary)'} /></div>
+                      <div className="info">
+                        <b>Needs attention</b>
+                        <small>Wet floor, no soap, or dirty</small>
+                      </div>
+                    </button>
+                    <button className={`rating-btn ${rating === 'urgent' ? 'selected bad' : ''}`} onClick={() => { setRating('urgent'); setStep('issue'); }}>
+                      <div className="icon"><Frown size={24} color={rating === 'urgent' ? 'var(--red)' : 'var(--text-tertiary)'} /></div>
+                      <div className="info">
+                        <b>Urgent problem</b>
+                        <small>Blocked, broken, or unusable</small>
+                      </div>
+                    </button>
+                  </div>
+                  <button className="link-btn" onClick={() => setStep('landing')}>← Back</button>
+                </motion.div>
+              )}
+
+              {/* ─── ISSUE SELECT ─── */}
+              {step === 'issue' && (
+                <motion.div
+                  key="issue"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="step-stack"
+                >
+                  <div className="step-title">
+                    <h2>What is the issue?</h2>
+                    <p>Select the main problem to report.</p>
+                  </div>
+                  <div className="issue-grid">
+                    {issueOptions.map(opt => (
+                      <button key={opt[1]} className={`issue-btn ${issue === opt[1] ? 'selected' : ''}`} onClick={() => setIssue(opt[1])}>
+                        <b>{opt[1]}</b>
+                        <small>{opt[2]}</small>
+                      </button>
+                    ))}
+                  </div>
+                  <button className="mobile-primary" disabled={!issue} onClick={() => setStep('location')}>
+                    Next →
+                  </button>
+                  <button className="link-btn" onClick={() => setStep('feedback')}>← Back</button>
+                </motion.div>
+              )}
+
+              {/* ─── LOCATION ─── */}
+              {step === 'location' && (
+                <motion.div
+                  key="location"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="step-stack"
+                >
+                  <div className="step-title">
+                    <h2>Where exactly?</h2>
+                    <p>Help staff locate the problem quickly.</p>
+                  </div>
+                  <div className="location-options">
+                    <button className={`location-btn ${unit === 'whole' ? 'selected' : ''}`} onClick={() => setUnit('whole')}>
+                      <div className="unit-num"><Grid size={16} /></div>
+                      <div className="unit-info"><b>Whole block</b><small>General area issue</small></div>
+                    </button>
+                    {Array.from({ length: toilet.total_units || 4 }).map((_, i) => (
+                      <button key={i} className={`location-btn ${unit === `U${i+1}` ? 'selected' : ''}`} onClick={() => setUnit(`U${i+1}`)}>
+                        <div className="unit-num">{i + 1}</div>
+                        <div className="unit-info"><b>Cubicle {i + 1}</b><small>Internal unit</small></div>
+                      </button>
+                    ))}
+                  </div>
+                  <label className="optional-photo-label">
+                    <Camera size={20} color="var(--text-tertiary)" />
+                    <div>
+                      <b>Add photo</b>
+                      <small>Optional · helps teams fix faster</small>
+                    </div>
+                    <input type="file" accept="image/*" />
+                  </label>
+                  <button className="mobile-primary" disabled={busy} onClick={submitFeedback}>
+                    {busy ? 'Submitting…' : 'Submit Report'}
+                  </button>
+                  <button className="link-btn" onClick={() => setStep('issue')}>← Back</button>
+                </motion.div>
+              )}
+
+              {/* ─── THANK YOU ─── */}
+              {step === 'thanks' && (
+                <motion.div
+                  key="thanks"
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                  className="success-page"
+                >
+                  <motion.div className="success-icon-wrap" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 20 }}>
+                    <CheckCircle size={40} color="var(--green)" />
+                  </motion.div>
+                  <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>Thank You</motion.h1>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                    Your report is logged and assigned to the facility management team.
+                  </motion.p>
+                  <motion.div className="ticket-receipt" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+                    <small>TICKET ID</small>
+                    <b>CP-{Math.random().toString(36).slice(2, 8).toUpperCase()}</b>
+                    <div className="live-dot">Active and routed</div>
+                  </motion.div>
+                  <div className="info-grid">
+                    <div className="info-cell"><small>Location</small><b>{toilet.name}</b></div>
+                    <div className="info-cell"><small>Issue</small><b>{issue || 'No issues'}</b></div>
+                  </div>
+                  <button className="mobile-primary" onClick={closeApp}>Done</button>
+                </motion.div>
+              )}
+
+              {/* ─── CLEANER SELECT ─── */}
+              {step === 'cleaner' && (
+                <motion.div
+                  key="cleaner"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="step-stack"
+                >
+                  <div className="step-title">
+                    <h2>Who is cleaning?</h2>
+                    <p>Select your name to start duty.</p>
+                  </div>
+                  <div className="cleaner-list">
+                    {cleaners.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-tertiary)', fontSize: '0.84rem' }}>
+                        No cleaners assigned to this facility.
+                      </div>
+                    ) : cleaners.map((c, i) => (
+                      <motion.button
+                        key={c.id}
+                        className="cleaner-btn"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        onClick={() => { setSelectedCleaner(c); setStep('pin'); }}
+                      >
+                        <div className="cleaner-avatar">{initials(c.full_name)}</div>
+                        <div className="info">
+                          <b>{c.full_name}</b>
+                          <small>Cleaning Staff</small>
+                        </div>
+                        <ArrowRight size={16} color="var(--text-tertiary)" />
+                      </motion.button>
+                    ))}
+                  </div>
+                  <button className="link-btn" onClick={() => setStep('landing')}>← Back</button>
+                </motion.div>
+              )}
+
+              {/* ─── PIN ENTRY ─── */}
+              {step === 'pin' && (
+                <motion.div
+                  key="pin"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="pin-screen"
+                >
+                  <div className="pin-avatar">{initials(selectedCleaner?.full_name)}</div>
+                  <h2>{selectedCleaner?.full_name}</h2>
+                  <p>Enter your 4-digit PIN to continue</p>
+
+                  <AnimatePresence>
+                    {pinError && (
+                      <motion.div
+                        className="pin-error"
+                        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      >
+                        Incorrect PIN — please try again
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="pin-dots">
+                    {[0, 1, 2, 3].map(i => (
+                      <motion.div
+                        key={i}
+                        className={`pin-dot ${pin.length > i ? 'filled' : ''}`}
+                        animate={{ scale: pin.length === i + 1 ? [1, 1.3, 1] : 1 }}
+                        transition={{ duration: 0.15 }}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="pin-keypad">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                      <button key={n} className="pin-key" disabled={busy} onClick={() => handlePinInput(pin + n)}>{n}</button>
+                    ))}
+                    <button className="pin-key action" disabled={busy} onClick={() => setStep('cleaner')}>Back</button>
+                    <button className="pin-key" disabled={busy} onClick={() => handlePinInput(pin + '0')}>0</button>
+                    <button className="pin-key action" disabled={busy} onClick={() => handlePinInput(pin.slice(0, -1))}>Del</button>
+                  </div>
+
+                  <div className="pin-submit-area">
+                    <button
+                      className="mobile-primary"
+                      disabled={pin.length !== 4 || busy}
+                      onClick={verifyPin}
+                    >
+                      {busy ? <><Loader size={16} style={{ animation: 'spin 0.8s linear infinite' }} /> Verifying…</> : 'Submit PIN →'}
+                    </button>
+                  </div>
+
+                  {demo && (
+                    <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                      Demo PIN: <b style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>1234</b>
+                    </p>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ─── READY TO CLEAN ─── */}
+              {step === 'ready' && (
+                <motion.div
+                  key="ready"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                  className="step-stack"
+                >
+                  <div className="cleaning-hero">
+                    <motion.div className="cleaning-icon-wrap" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 15 }}>
+                      <Sparkles size={36} color="var(--green)" />
+                    </motion.div>
+                    <h1>Ready to Clean</h1>
+                    <p>Assigned to block below</p>
+                  </div>
+
+                  <div className="location-card">
+                    <div className="loc-icon">{tm.icon || '🚻'}</div>
+                    <div>
+                      <b>{toilet.name}</b>
+                      <small>{toilet.code} · {toilet.floor}</small>
+                    </div>
+                  </div>
+
+                  {toilet.latest_issue && (
+                    <div className="issue-alert">
+                      <AlertTriangle size={18} color="var(--red)" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        <b>Citizen report: {toilet.latest_issue}</b>
+                        <small>Please ensure this issue is resolved</small>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="assignment-grid">
+                    <div className="info-cell">
+                      <small>Assigned to</small>
+                      <b>{selectedCleaner?.full_name}</b>
+                    </div>
+                    <div className="info-cell">
+                      <small>Target time</small>
+                      <b>15 minutes</b>
+                    </div>
+                  </div>
+
+                  <button className="mobile-primary" disabled={busy} onClick={startCleaning}>
+                    {busy ? 'Starting…' : 'START CLEANING →'}
+                  </button>
+                </motion.div>
+              )}
+
+              {/* ─── CLEANING IN PROGRESS ─── */}
+              {step === 'cleaning' && (
+                <motion.div
+                  key="cleaning"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="step-stack"
+                >
+                  <div style={{ textAlign: 'center', paddingBottom: '0.5rem' }}>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Cleaning in Progress</p>
+                    <div className="cleaning-timer">
+                      {Math.floor(duration / 60).toString().padStart(2, '0')}:{(duration % 60).toString().padStart(2, '0')}
+                    </div>
+                    <p className="timer-label">minutes elapsed</p>
+                  </div>
+
+                  <div className="reminder-grid">
+                    <div className="reminder-item">
+                      <Sparkles size={20} color="var(--accent)" />
+                      <small>Floor mopped</small>
+                    </div>
+                    <div className="reminder-item">
+                      <Droplets size={20} color="var(--accent)" />
+                      <small>Basin wiped</small>
+                    </div>
+                    <div className="reminder-item">
+                      <Trash2 size={20} color="var(--accent)" />
+                      <small>Bins emptied</small>
+                    </div>
+                    <div className="reminder-item">
+                      <Wind size={20} color="var(--accent)" />
+                      <small>Smell cleared</small>
+                    </div>
+                  </div>
+
+                  <button className="audio-btn" onClick={playMarathiReminder}>
+                    <Volume2 size={15} /> Play instructions in Marathi
+                  </button>
+
+                  <div className="privacy-notice">
+                    Photo evidence required · Include yourself and the clean facility
+                  </div>
+
+                  {collageData ? (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="step-stack">
+                      <div className="collage-preview">
+                        <img src={collageData} alt="Evidence collage" />
+                        <div className="evidence-badge"><CheckCircle size={12} /> Evidence ready</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.65rem' }}>
+                        <button className="mobile-secondary" style={{ flex: 1 }} onClick={() => setCollageData(null)}>Retake</button>
+                        <button className="mobile-primary" style={{ flex: 2 }} disabled={busy} onClick={completeCleaning}>
+                          {busy ? 'Uploading…' : <><CheckCircle size={14} /> Complete Cycle</>}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="step-stack">
+                      <div style={{ display: 'flex', gap: '0.65rem' }}>
+                        <button
+                          className={photoView === 'site' ? 'mobile-primary' : 'mobile-secondary'}
+                          style={{ flex: 1, fontSize: '0.8rem' }}
+                          onClick={() => setPhotoView('site')}
+                        >
+                          1. Clean site {siteData ? '✓' : ''}
+                        </button>
+                        <button
+                          className={photoView === 'selfie' ? 'mobile-primary' : 'mobile-secondary'}
+                          style={{ flex: 1, fontSize: '0.8rem', opacity: siteData ? 1 : 0.45 }}
+                          onClick={() => siteData && setPhotoView('selfie')}
+                        >
+                          2. Selfie {selfieData ? '✓' : ''}
+                        </button>
+                      </div>
+
+                      {photoView === 'site' && (
+                        <label className={`camera-box ${siteData ? 'has-photo' : ''}`}>
+                          {siteData
+                            ? <img src={siteData} alt="Site" />
+                            : <><Camera size={28} color="var(--text-tertiary)" /><b>Photo of clean facility</b><small>Ensure floor and cubicles are visible</small></>
+                          }
+                          <input type="file" accept="image/*" capture="environment" onChange={e => setSitePhoto(e.target.files[0])} />
+                        </label>
+                      )}
+
+                      {photoView === 'selfie' && (
+                        <label className={`camera-box ${selfieData ? 'has-photo' : ''}`}>
+                          {selfieData
+                            ? <img src={selfieData} alt="Selfie" />
+                            : <><User size={28} color="var(--text-tertiary)" /><b>Selfie in uniform</b><small>Must match your registered face</small></>
+                          }
+                          <input type="file" accept="image/*" capture="user" onChange={e => setSelfie(e.target.files[0])} />
+                        </label>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ─── DUTY COMPLETE ─── */}
+              {step === 'complete' && (
+                <motion.div
+                  key="complete"
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                  className="success-page"
+                >
+                  <motion.div className="success-icon-wrap" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 20 }}>
+                    <CheckCircle size={40} color="var(--green)" />
+                  </motion.div>
+                  <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>Duty Complete</motion.h1>
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                    Excellent work! Your cleaning cycle has been recorded.
+                  </motion.p>
+                  {collageData && <img src={collageData} className="completion-collage" alt="Evidence" />}
+                  <div className="info-grid">
+                    <div className="info-cell"><small>Cleaner</small><b>{selectedCleaner?.full_name}</b></div>
+                    <div className="info-cell"><small>Duration</small><b>{Math.max(1, Math.round(duration / 60))} min</b></div>
+                    <div className="info-cell" style={{ gridColumn: '1/-1' }}><small>Facility</small><b>{toilet.name}</b></div>
+                  </div>
+                  <button className="mobile-primary" onClick={closeApp}>Close Shift</button>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
           </main>
         </div>
       </div>
     </div>
   );
 }
+

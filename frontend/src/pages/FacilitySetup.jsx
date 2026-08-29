@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { supabase, api } from '../lib/api.js';
 import { relativeTime } from '../lib/data.js';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, CheckCircle, Search, Building2, QrCode, Download, X } from 'lucide-react';
 
 const TOILET_TYPES = ['Male', 'Female', 'Unisex', 'Accessible', 'Staff', 'Other'];
 const TYPE_ICONS = { Male: '♂', Female: '♀', Unisex: '⚥', Accessible: '♿', Staff: '◆', Other: 'WC' };
@@ -100,9 +102,9 @@ function AddToiletForm({ facilityId, onCreated, notify }) {
   }
 
   return (
-    <div className="add-toilet-form panel">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="add-toilet-form panel">
       <div className="form-intro">
-        <span style={{ fontSize: 24 }}>＋</span>
+        <div className="form-icon"><Plus size={32} /></div>
         <div>
           <h2>Add a toilet block</h2>
           <p>Fill in the details and a QR code will be generated instantly.</p>
@@ -110,17 +112,19 @@ function AddToiletForm({ facilityId, onCreated, notify }) {
       </div>
 
       {/* Success flash */}
-      {created && (
-        <div className="toilet-created-flash">
-          <span>✓</span>
-          <div>
-            <b>"{created.name}" created</b>
-            <small>ID: {created.code}</small>
-          </div>
-          <button className="primary" onClick={handleDownloadQR}>↓ Download QR</button>
-          <button onClick={() => setCreated(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 18 }}>×</button>
-        </div>
-      )}
+      <AnimatePresence>
+        {created && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="toilet-created-flash" style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'var(--green-bg)', padding: 16, borderRadius: 8, marginBottom: 24, border: '1px solid var(--green)' }}>
+            <CheckCircle color="var(--green)" />
+            <div style={{ flex: 1 }}>
+              <b style={{ color: 'var(--text-main)', display: 'block' }}>"{created.name}" created</b>
+              <small style={{ color: 'var(--text-muted)' }}>ID: {created.code}</small>
+            </div>
+            <button type="button" className="primary" onClick={handleDownloadQR}><Download size={14} /> Download QR</button>
+            <button type="button" onClick={() => setCreated(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={submit}>
         <div className="form-grid">
@@ -181,65 +185,97 @@ function AddToiletForm({ facilityId, onCreated, notify }) {
         </div>
 
         <div className="form-footer">
-          <p style={{ fontSize: 9, color: 'var(--muted)' }}>A permanent QR code will be generated automatically.</p>
+          <button type="button" className="ghost" onClick={() => setForm({ name: '', floor: '', area: '', toilet_type: 'Male', num_units: 4, cleaning_interval_minutes: 120 })}>Clear</button>
           <button type="submit" className="primary large" disabled={busy || !form.name.trim()}>
-            {busy ? 'Creating…' : 'Create & generate QR →'}
+            {busy ? 'Creating...' : 'Create toilet block'} <Plus size={16} />
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }
 
-// ─── Toilet Row ───────────────────────────────────────────────────────────────
+// ─── Editable Toilet Row ───────────────────────────────────────────────────────
 function ToiletRow({ toilet, onDeactivate, notify }) {
+  const [editing, setEditing] = useState(null); // field name being edited
+  const [form, setForm] = useState(toilet);
+  
   const s = toilet.status || toilet.derived_status || 'NOT_CLEANED';
   const color = STATUS_COLOR[s] || 'ink';
   const label = STATUS_LABEL[s] || s;
 
+  async function saveField(field, value) {
+    setEditing(null);
+    if (toilet[field] === value) return; // no change
+    
+    // Optimistic update
+    setForm(prev => ({ ...prev, [field]: value }));
+    
+    try {
+      const { error } = await supabase.from('toilets').update({ [field]: value }).eq('id', toilet.id);
+      if (error) throw error;
+      notify(`✓ Saved ${field}`);
+    } catch (err) {
+      notify(`Error saving ${field}`);
+      setForm(prev => ({ ...prev, [field]: toilet[field] })); // Revert
+    }
+  }
+
+  function handleBlur(field, e) {
+    saveField(field, e.target.value);
+  }
+
+  function handleKey(field, e) {
+    if (e.key === 'Enter') {
+      saveField(field, e.target.value);
+    }
+  }
+
   return (
     <tr>
-      <td>
-        <b style={{ fontSize: 11 }}>{toilet.name}</b>
-        <br />
-        <small style={{ color: 'var(--muted)' }}>{toilet.code}</small>
+      <td onClick={() => setEditing('name')}>
+        {editing === 'name' ? (
+          <input className="inline-edit-input" autoFocus defaultValue={form.name} onBlur={e => handleBlur('name', e)} onKeyDown={e => handleKey('name', e)} />
+        ) : (
+          <>
+            <b style={{ fontSize: 13 }}>{form.name}</b>
+            <br />
+            <span className="code-tag">{toilet.code}</span>
+          </>
+        )}
+      </td>
+      <td onClick={() => setEditing('floor')}>
+        {editing === 'floor' ? (
+          <input className="inline-edit-input" autoFocus defaultValue={form.floor} onBlur={e => handleBlur('floor', e)} onKeyDown={e => handleKey('floor', e)} placeholder="Floor..." />
+        ) : (
+          <span style={{ fontSize: 12 }}>{form.floor || '—'}</span>
+        )}
+      </td>
+      <td onClick={() => setEditing('area')}>
+        {editing === 'area' ? (
+          <input className="inline-edit-input" autoFocus defaultValue={form.area} onBlur={e => handleBlur('area', e)} onKeyDown={e => handleKey('area', e)} placeholder="Area..." />
+        ) : (
+          <span style={{ fontSize: 12 }}>{form.area || '—'}</span>
+        )}
+      </td>
+      <td onClick={() => setEditing('cleaning_interval_minutes')}>
+        {editing === 'cleaning_interval_minutes' ? (
+          <select className="inline-edit-input" autoFocus defaultValue={form.cleaning_interval_minutes} onBlur={e => handleBlur('cleaning_interval_minutes', e)}>
+            {INTERVALS.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
+          </select>
+        ) : (
+          <span style={{ fontSize: 12 }}>{form.cleaning_interval_minutes}m</span>
+        )}
       </td>
       <td>
-        <span style={{ fontSize: 10 }}>
-          {[toilet.floor, toilet.area].filter(Boolean).join(' · ') || toilet.building || '—'}
-        </span>
-      </td>
-      <td>
-        <span style={{ fontSize: 9 }}>{TYPE_ICONS[toilet.toilet_type] || 'WC'} {toilet.toilet_type || 'Other'}</span>
-      </td>
-      <td style={{ textAlign: 'center', fontSize: 10 }}>
-        {toilet.num_units || '—'}
-      </td>
-      <td>
-        <span className={`status-dot-label ${color}`}>
-          <i style={{ width: 7, height: 7, borderRadius: '50%', background: `var(--${color === 'red' ? 'red' : color === 'green' ? 'green' : color === 'amber' ? 'amber' : 'ink'})`, display: 'inline-block', marginRight: 5 }} />
+        <span className={`tc-status-pill`} style={{ color: `var(--${color})`, border: `1px solid var(--${color})` }}>
           {label}
         </span>
       </td>
-      <td style={{ fontSize: 9, color: 'var(--muted)' }}>
-        {toilet.last_cleaned_at ? relativeTime(toilet.last_cleaned_at) : 'Never'}
-      </td>
       <td>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            className="secondary"
-            style={{ padding: '4px 10px', fontSize: 9 }}
-            onClick={() => downloadQR(toilet)}
-          >
-            ↓ QR
-          </button>
-          <button
-            className="danger-link"
-            style={{ fontSize: 9 }}
-            onClick={() => onDeactivate(toilet)}
-          >
-            Deactivate
-          </button>
+          <button className="primary" style={{ padding: '4px 10px', fontSize: 10 }} onClick={() => downloadQR(toilet)}>↓ QR</button>
+          <button className="ghost" style={{ padding: '4px 10px', fontSize: 10, color: 'var(--red)' }} onClick={() => onDeactivate(toilet)}>Deactivate</button>
         </div>
       </td>
     </tr>
@@ -284,8 +320,8 @@ export default function Facilities({ toilets, setToilets, facilityId, facilityNa
 
   const TABS = [
     { id: 'toilets', label: `Toilets (${toilets.length})` },
-    { id: 'add',     label: '＋ Add Toilet' },
-    { id: 'info',    label: '◇ Facility Info' },
+    { id: 'add',     label: <><Plus size={16} /> Add Toilet</> },
+    { id: 'info',    label: <><Building2 size={16} /> Facility Info</> },
   ];
 
   return (
@@ -315,9 +351,9 @@ export default function Facilities({ toilets, setToilets, facilityId, facilityNa
       {tab === 'toilets' && (
         <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
           {/* Search bar */}
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--edge)' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)' }}>
             <div className="tw-search" style={{ maxWidth: 400 }}>
-              <span>⌕</span>
+              <Search className="search-icon" size={16} />
               <input
                 placeholder="Search name, code, floor…"
                 value={search}
@@ -328,36 +364,42 @@ export default function Facilities({ toilets, setToilets, facilityId, facilityNa
 
           {/* Table */}
           {toilets.length === 0 ? (
-            <div className="empty-state" style={{ padding: '48px 24px' }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>◇</div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="empty-state" style={{ padding: '48px 24px' }}>
+              <Building2 size={48} color="var(--text-muted)" style={{ marginBottom: 16 }} />
               <h2>No toilets added yet</h2>
               <p>Create your first toilet block to generate a QR code.</p>
-              <button className="primary" onClick={() => setTab('add')}>＋ Add first toilet →</button>
-            </div>
+              <button className="primary" onClick={() => setTab('add')}><Plus size={16} /> Add first toilet</button>
+            </motion.div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table className="data-table">
+              <table className="editable-table">
                 <thead>
                   <tr>
                     <th>Name / Code</th>
-                    <th>Location</th>
-                    <th>Type</th>
-                    <th style={{ textAlign: 'center' }}>Units</th>
+                    <th>Floor</th>
+                    <th>Area</th>
+                    <th>Interval</th>
                     <th>Status</th>
-                    <th>Last Cleaned</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <motion.tbody initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }}>
                   {filteredToilets.map(t => (
-                    <ToiletRow
-                      key={t.id}
-                      toilet={t}
-                      onDeactivate={deactivateToilet}
-                      notify={notify}
-                    />
+                    <motion.tr key={t.id} variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0 } }}>
+                      <td colSpan="6" style={{ padding: 0 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <tbody>
+                            <ToiletRow
+                              toilet={t}
+                              onDeactivate={deactivateToilet}
+                              notify={notify}
+                            />
+                          </tbody>
+                        </table>
+                      </td>
+                    </motion.tr>
                   ))}
-                </tbody>
+                </motion.tbody>
               </table>
               {filteredToilets.length === 0 && (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: 10 }}>
@@ -385,7 +427,7 @@ export default function Facilities({ toilets, setToilets, facilityId, facilityNa
       {tab === 'info' && (
         <div className="panel form-card" style={{ maxWidth: 560 }}>
           <div className="form-intro">
-            <span style={{ fontSize: 24 }}>◇</span>
+            <div className="form-icon"><Building2 size={32} /></div>
             <div>
               <h2>Facility information</h2>
               <p>These details appear on all QR cards and the dashboard.</p>

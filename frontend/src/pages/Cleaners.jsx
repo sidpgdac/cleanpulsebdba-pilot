@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api, supabase } from '../lib/api.js';
 import { initials, relativeTime } from '../lib/data.js';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Download, UserPlus } from 'lucide-react';
 
 export default function Cleaners({ facilityId, notify }) {
   const [cleaners, setCleaners] = useState([]);
@@ -86,75 +88,82 @@ export default function Cleaners({ facilityId, notify }) {
           <span>Manage cleaning staff, PIN codes, and performance.</span>
         </div>
         <div className="page-actions">
-          <button className="secondary" onClick={() => notify('Staff exported')}>↓ Export</button>
-          <button className="primary" onClick={() => setShowAdd(s => !s)}>＋ Add cleaner</button>
+          <button className="secondary" onClick={() => notify('Staff exported')}><Download size={14} /> Export</button>
+          <button className="primary" onClick={() => setShowAdd(s => !s)}><Plus size={16} /> Add cleaner</button>
         </div>
       </div>
 
-      {showAdd && (
-        <form className="panel" style={{ padding: 24, marginBottom: 20 }} onSubmit={addCleaner}>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 16, marginBottom: 16 }}>New cleaner</h2>
-          <div className="form-grid">
-            <label className="wide">Full name
-              <input
-                required
-                value={form.full_name}
-                onChange={e => setForm({ ...form, full_name: e.target.value })}
-                placeholder="e.g. Meena Sharma"
-              />
-            </label>
-            <label>4-digit PIN
-              <input
-                required
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={form.pin}
-                onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })}
-                placeholder="••••"
-              />
-            </label>
-            <label>Confirm PIN
-              <input
-                required
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={form.pin_confirm}
-                onChange={e => setForm({ ...form, pin_confirm: e.target.value.replace(/\D/g, '') })}
-                placeholder="••••"
-              />
-            </label>
-          </div>
-          {formError && (
-            <div style={{ color: 'var(--red)', fontSize: 10, padding: '8px 0' }}>{formError}</div>
-          )}
-          <div className="form-footer">
-            <p style={{ fontSize: 9, color: 'var(--muted)' }}>PIN is hashed server-side and never stored in plain text.</p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="button" className="secondary" onClick={() => setShowAdd(false)}>Cancel</button>
-              <button type="submit" className="primary" disabled={busy}>
-                {busy ? 'Creating…' : 'Create cleaner →'}
-              </button>
+      <AnimatePresence>
+        {showAdd && (
+          <motion.form 
+            initial={{ opacity: 0, y: -20, height: 0 }} 
+            animate={{ opacity: 1, y: 0, height: 'auto' }} 
+            exit={{ opacity: 0, y: -20, height: 0 }}
+            className="panel" style={{ padding: 24, marginBottom: 24, overflow: 'hidden' }} onSubmit={addCleaner}
+          >
+            <h2 style={{ fontSize: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><UserPlus size={18} color="var(--accent)" /> New cleaner</h2>
+            <div className="form-grid">
+              <label className="wide">Full name
+                <input
+                  required
+                  value={form.full_name}
+                  onChange={e => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="e.g. Meena Sharma"
+                />
+              </label>
+              <label>4-digit PIN
+                <input
+                  required
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={form.pin}
+                  onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })}
+                  placeholder="••••"
+                />
+              </label>
+              <label>Confirm PIN
+                <input
+                  required
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={form.pin_confirm}
+                  onChange={e => setForm({ ...form, pin_confirm: e.target.value.replace(/\D/g, '') })}
+                  placeholder="••••"
+                />
+              </label>
             </div>
-          </div>
-        </form>
-      )}
+            {formError && (
+              <div style={{ color: 'var(--red)', fontSize: 11, padding: '8px 0' }}>{formError}</div>
+            )}
+            <div className="form-footer">
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>PIN is hashed server-side and never stored in plain text.</p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" className="ghost" onClick={() => setShowAdd(false)}>Cancel</button>
+                <button type="submit" className="primary" disabled={busy}>
+                  {busy ? 'Creating...' : 'Create cleaner'} <UserPlus size={16} />
+                </button>
+              </div>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
 
-      <div className="people-grid">
+      <motion.div className="people-grid" initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }}>
         {loading ? (
-          <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: 40, color: 'var(--muted)', fontSize: 11 }}>Loading…</div>
+          <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Loading…</div>
         ) : cleaners.length === 0 ? (
-          <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: 40, color: 'var(--muted)', fontSize: 11 }}>
+          <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
             No cleaners registered yet. Add your first cleaner to begin operations.
           </div>
         ) : cleaners.map(c => (
-          <article className="person-card panel" key={c.id}>
+          <motion.article className="person-card panel" key={c.id} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: "spring" } } }}>
             {c.active && <span className="champion">Active</span>}
-            {!c.active && <span className="champion" style={{ background: 'var(--ink)', color: '#fff' }}>Inactive</span>}
+            {!c.active && <span className="champion" style={{ background: 'var(--border-medium)', color: 'var(--text-muted)' }}>Inactive</span>}
             <div className="person-avatar">{initials(c.full_name)}</div>
             <h2>{c.full_name}</h2>
-            <p style={{ fontSize: 9, color: 'var(--muted)' }}>Added {relativeTime(c.created_at)}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Added {relativeTime(c.created_at)}</p>
             
             <div className="person-metrics">
               <span><small>Status</small><b>{c.active ? 'Active' : 'Inactive'}</b></span>
@@ -166,9 +175,9 @@ export default function Cleaners({ facilityId, notify }) {
             >
               {c.active ? 'Deactivate' : 'Reactivate'}
             </button>
-          </article>
+          </motion.article>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -7,12 +7,14 @@ import Cleaners from '../pages/Cleaners.jsx';
 import Complaints from '../pages/Complaints.jsx';
 import Experience from '../pages/public/QRFlow.jsx';
 
+import { LayoutDashboard, Building2, Users, AlertCircle, LogOut } from 'lucide-react';
+
 // ─── Navigation ──────────────────────────────────────────────────────────────
 const NAV = [
-  { id: 'dashboard',   icon: '◎', label: 'Dashboard'   },
-  { id: 'facilities',  icon: '◇', label: 'Facilities'  },
-  { id: 'cleaners',    icon: '♙', label: 'Cleaners'    },
-  { id: 'complaints',  icon: '!', label: 'Complaints'  },
+  { id: 'dashboard',   icon: <LayoutDashboard size={18} />, label: 'Dashboard'   },
+  { id: 'facilities',  icon: <Building2 size={18} />, label: 'Facilities'  },
+  { id: 'cleaners',    icon: <Users size={18} />, label: 'Cleaners'    },
+  { id: 'complaints',  icon: <AlertCircle size={18} />, label: 'Complaints'  },
 ];
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -240,22 +242,12 @@ export default function CleanPulseApp() {
             aria-label="Sign out"
             title="Sign out"
             onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
-          >→</button>
+          ><LogOut size={16} /></button>
         </div>
       </aside>
 
       {/* ── Workspace ── */}
       <section className="workspace">
-        <header className="topbar">
-          <div>
-            <p>{NAV.find(n => n.id === view)?.label?.toUpperCase() || view.toUpperCase()}</p>
-            <button>{facilityName} <span>⌄</span></button>
-          </div>
-          <div className="top-actions">
-            <span className="live"><i /> Live</span>
-          </div>
-        </header>
-
         <div className="content">
           {renderContent()}
         </div>

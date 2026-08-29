@@ -2,6 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase, cleanerApi, publicApi } from '../../lib/api.js';
 import { statusMeta, toiletTypeMeta, issueOptions, initials, buildEvidenceCollage } from '../../lib/data.js';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  X, Loader, CheckCircle, Smile, Meh, Frown, Sparkles, Droplets, Trash2, 
+  Wind, ArrowRight, Camera, Grid, User, Volume2
+} from 'lucide-react';
 
 export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, demo }) {
   const { code: routeCode } = useParams();
@@ -76,18 +81,31 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
   }, [siteData, selfieData]);
 
   if (loading) {
-    return <div className="loadingScreen"><div className="logo pulse">✦</div><b style={{fontSize:11,color:'var(--muted)'}}>LOADING</b></div>;
+    return (
+      <div className="loadingScreen">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="logo"><Loader size={24} /></motion.div>
+        <b style={{fontSize:11,color:'var(--text-muted)'}}>LOADING</b>
+      </div>
+    );
   }
 
   if (!toilet) {
     return (
-      <div className="experience-backdrop">
-        <div className="invalid-qr">
-          <span>×</span>
-          <h1>Invalid CleanPulse QR</h1>
-          <p><b>{code}</b> is not an active toilet ID.</p>
-        </div>
-      </div>
+      <AnimatePresence>
+        <motion.div 
+          initial={{ opacity: 0, y: '100%' }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: '100%' }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="experience-backdrop"
+        >
+          <div className="mobile-shell">
+            <button className="ghost" onClick={onClose}><X size={24} /></button>
+            <h1>Invalid CleanPulse QR</h1>
+            <p><b>{code}</b> is not an active toilet ID.</p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
@@ -268,9 +286,7 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
   function handlePinInput(val) {
     const v = val.replace(/\D/g, '').slice(0, 4);
     setPin(v);
-    if (v.length === 4) {
-      setTimeout(() => verifyPin(), 100);
-    }
+    setPinError(false);
   }
 
   function closeApp() {
@@ -284,81 +300,69 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
         {demo && <p className="demo-caption">CITIZEN & CLEANER JOURNEY</p>}
         
         <div className={demo ? 'phone-frame' : 'qrPage'} style={demo ? {} : { padding: 0 }}>
-          <header className="mobile-brand">
+          <header className="mobile-header">
             <div>
-              <span>CP</span>
-              <div>
-                <b>CleanPulse</b>
-                <small>BMC HEALTH</small>
-              </div>
+              <b>CleanPulse</b>
+              <small>BDBA Hospital</small>
             </div>
-            {demo && <button onClick={onClose}>×</button>}
+            {demo && <button className="ghost" onClick={onClose}><X size={20} /></button>}
           </header>
 
           <main className="mobile-page">
             {step === 'landing' && (
-              <>
-                <div className="mobile-heading location-block">
-                  <p>{(toilet.facility_name || 'BDBA SHATABDI HOSPITAL').toUpperCase()}</p>
-                  <div className={`mobile-type-badge ${tm.tone}`}>
-                    <i>{tm.icon}</i>
-                    <div><b>{tm.english}</b><small>{tm.marathi}</small></div>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mobile-view">
+                <div className="qr-hero">
+                  <div className="qr-hero-card">
+                    <b style={{ color: sm.color, background: `${sm.dot}10` }}>{sm.label}</b>
+                    <h1>{toilet.name}</h1>
+                    <p>{[toilet.floor, toilet.area].filter(Boolean).join(' · ')}</p>
                   </div>
-                  <h1>{toilet.name}</h1>
-                  <p>{[toilet.floor, toilet.area].filter(Boolean).join(' · ')}</p>
                 </div>
 
-                <div className={`public-status ${status}`}>
-                  <b>{sm.label}</b>
-                  <small>Status logged: {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</small>
-                </div>
+                <div className="mobile-body">
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Help us maintain this facility</p>
+                  
+                  <div className="action-grid">
+                    <button className="action-btn" onClick={() => setStep('feedback')}>
+                      <Smile size={24} color="var(--accent)" />
+                      <div><b>Submit Feedback</b><small>Rate cleanliness</small></div>
+                      <ArrowRight size={16} color="var(--text-muted)" />
+                    </button>
+                    
+                    <button className="action-btn outline" onClick={loadCleaners}>
+                      <Sparkles size={24} color="var(--ink)" />
+                      <div><b>Staff Login</b><small>Log cleaning cycle</small></div>
+                      <ArrowRight size={16} color="var(--text-muted)" />
+                    </button>
+                  </div>
 
-                <div className="role-choices">
-                  <p>SELECT REASON FOR SCAN</p>
-                  <button onClick={() => setStep('rating')}>
-                    <span>🙂</span>
-                    <div>
-                      <b>Citizen Feedback</b>
-                      <small>Report a problem or rate cleanliness</small>
-                    </div>
-                    <i>→</i>
-                  </button>
-                  <button onClick={loadCleaners}>
-                    <span>🧹</span>
-                    <div>
-                      <b>Cleaning Staff</b>
-                      <small>Start or complete cleaning duty</small>
-                    </div>
-                    <i>→</i>
-                  </button>
+                  <div className="qr-footer">
+                    <small>ID: {code} · {tm.label}</small>
+                  </div>
                 </div>
-
-                <div className="trust-score">
-                  <span>FACILITY CLEANLINESS SCORE</span>
-                  <strong>94%</strong>
-                  <small>BMC SHATABDI HOSPITAL</small>
-                </div>
-              </>
+              </motion.div>
             )}
 
-            {step === 'rating' && (
-              <>
-                <div className="mobile-heading">
-                  <h1>How is the toilet?</h1>
-                  <p>Your anonymous feedback holds teams accountable.</p>
+            {step === 'feedback' && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="mobile-view feedback-flow">
+                <div className="mobile-body">
+                  <h2>How is the cleanliness?</h2>
+                  <div className="rating-options">
+                    <button className={rating === 'good' ? 'selected' : ''} onClick={() => setRating('good')}>
+                      <Smile size={32} color={rating === 'good' ? 'var(--green)' : 'var(--text-muted)'} />
+                      <div><b>Clean & functioning</b><small>Everything is good</small></div>
+                    </button>
+                    <button className={rating === 'bad' ? 'selected' : ''} onClick={() => setRating('bad')}>
+                      <Meh size={32} color={rating === 'bad' ? 'var(--orange)' : 'var(--text-muted)'} />
+                      <div><b>Needs attention</b><small>Wet floor, no soap, or dirty</small></div>
+                    </button>
+                    <button className={rating === 'urgent' ? 'selected' : ''} onClick={() => setRating('urgent')}>
+                      <Frown size={32} color={rating === 'urgent' ? 'var(--red)' : 'var(--text-muted)'} />
+                      <div><b>Urgent problem</b><small>Blocked, broken, or unusable</small></div>
+                    </button>
+                  </div>
                 </div>
-                <div className="rating-stack">
-                  <button onClick={() => { setRating('clean'); setStep('thanks'); }}>
-                    <span>🙂</span><div><b>Clean & functioning</b><small>Everything is good</small></div>
-                  </button>
-                  <button className="attention-choice" onClick={() => { setRating('attention'); setStep('issue'); }}>
-                    <span>😐</span><div><b>Needs attention</b><small>Wet floor, no soap, or dirty</small></div>
-                  </button>
-                  <button className="urgent-choice" onClick={() => { setRating('urgent'); setStep('issue'); }}>
-                    <span>🤢</span><div><b>Urgent problem</b><small>Blocked, broken, or unusable</small></div>
-                  </button>
-                </div>
-              </>
+              </motion.div>
             )}
 
             {step === 'issue' && (
@@ -381,35 +385,37 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
             )}
 
             {step === 'location' && (
-              <>
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="mobile-view feedback-flow">
                 <div className="mobile-heading">
                   <h1>Where exactly?</h1>
                   <p>Help staff find the problem.</p>
                 </div>
                 <div className="location-options">
                   <button className={unit === 'whole' ? 'selected' : ''} onClick={() => setUnit('whole')}>
-                    <span>▣</span><div><b>Whole block</b><small>General issue</small></div>
+                    <Grid size={24} color={unit === 'whole' ? 'var(--accent)' : 'var(--text-muted)'} />
+                    <div><b>Whole block</b><small>General issue</small></div>
                   </button>
                   {Array.from({ length: toilet.total_units || 4 }).map((_, i) => (
                     <button key={i} className={unit === `U${i+1}` ? 'selected' : ''} onClick={() => setUnit(`U${i+1}`)}>
-                      <span>{i+1}</span><div><b>Cubicle {i+1}</b><small>Internal unit</small></div>
+                      <span className="unit-number">{i+1}</span>
+                      <div><b>Cubicle {i+1}</b><small>Internal unit</small></div>
                     </button>
                   ))}
                 </div>
                 <label className="optional-photo">
-                  <span>📷</span>
+                  <Camera size={24} color="var(--text-muted)" />
                   <div><b>Add photo (optional)</b><small>Helps teams fix faster</small></div>
                   <input type="file" accept="image/*" />
                 </label>
                 <button className="mobile-primary" disabled={busy} onClick={submitFeedback}>
-                  {busy ? 'Submitting…' : 'Submit report'}
+                  {busy ? 'Submitting...' : 'Submit report'}
                 </button>
-              </>
+              </motion.div>
             )}
 
             {step === 'thanks' && (
-              <div className="success-page">
-                <div className="success-check">✓</div>
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="success-page">
+                <div className="success-check"><CheckCircle size={48} color="var(--green)" /></div>
                 <h1>Thank You</h1>
                 <p>Your report has been logged and assigned to the facility management team.</p>
                 
@@ -425,11 +431,11 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                 </div>
                 
                 <button className="mobile-primary" onClick={closeApp}>Close</button>
-              </div>
+              </motion.div>
             )}
 
             {step === 'cleaner' && (
-              <>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                 <div className="mobile-heading">
                   <h1>Who is cleaning?</h1>
                   <p>Select your name to begin duty.</p>
@@ -437,26 +443,26 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                 <div className="cleaner-list">
                   {cleaners.map(c => (
                     <button key={c.id} onClick={() => { setSelectedCleaner(c); setStep('pin'); }}>
-                      <span>{initials(c.full_name)}</span>
+                      <span className="avatar-icon">{initials(c.full_name)}</span>
                       <div><b>{c.full_name}</b><small>Staff Cleaner</small></div>
-                      <i>→</i>
+                      <ArrowRight size={16} color="var(--text-muted)" />
                     </button>
                   ))}
                   {cleaners.length === 0 && <div className="cleaner-help">No cleaners assigned to this facility.</div>}
                 </div>
                 <button className="trust-link" onClick={() => setStep('landing')}>Cancel</button>
-              </>
+              </motion.div>
             )}
 
             {step === 'pin' && (
-              <>
-                <div className="mobile-heading location-block">
-                  <span style={{ fontSize: 32, background: 'var(--green-soft)', padding: 12, borderRadius: 16 }}>{initials(selectedCleaner?.full_name)}</span>
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <div className="mobile-heading location-block" style={{ textAlign: 'center' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, fontSize: 24, fontWeight: 600, background: 'var(--green-soft)', color: 'var(--green)', padding: 12, borderRadius: 32, marginBottom: 16 }}>{initials(selectedCleaner?.full_name)}</span>
                   <h1>{selectedCleaner?.full_name}</h1>
                   <p>Enter your 4-digit PIN</p>
                 </div>
                 
-                {pinError && <div style={{ color: 'var(--red)', fontSize: 10, textAlign: 'center', background: 'var(--red-soft)', padding: 10, borderRadius: 8 }}>Incorrect PIN. Please try again.</div>}
+                {pinError && <div style={{ color: 'var(--red)', fontSize: 10, textAlign: 'center', background: 'var(--red-bg)', padding: 10, borderRadius: 8 }}>Incorrect PIN. Please try again.</div>}
                 
                 <div className="pin-display">
                   {[0,1,2,3].map(i => <div key={i} className={`pin-dot ${pin.length > i ? 'filled' : ''}`} />)}
@@ -471,25 +477,27 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                   <button disabled={busy} onClick={() => handlePinInput(pin.slice(0, -1))} style={{ fontSize: 14 }}>Del</button>
                 </div>
                 {demo && <p className="cleaner-help" style={{ marginTop: 20 }}>Demo PIN: 1234</p>}
-              </>
+              </motion.div>
             )}
 
             {step === 'ready' && (
-              <>
-                <div className="mobile-heading">
-                  <h1 style={{ fontSize: 42, margin: '20px 0' }}>🧹</h1>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                <div className="mobile-heading" style={{ textAlign: 'center' }}>
+                  <div style={{ display: 'inline-flex', padding: 20, borderRadius: 40, background: 'var(--green-bg)', marginBottom: 20 }}>
+                    <Sparkles size={40} color="var(--green)" />
+                  </div>
                   <h1 style={{ fontSize: 24 }}>Ready to clean</h1>
                   <p>You have been assigned to this block.</p>
                 </div>
                 
                 <div className="cleaning-location">
-                  <span>{tm.icon}</span>
+                  <div className="location-icon">{tm.icon}</div>
                   <div><b>{toilet.name}</b><small>{toilet.code} · {toilet.floor}</small></div>
                 </div>
                 
                 {status === 'alert' && toilet.latest_issue && (
                   <div className="linked-issue">
-                    <span>!</span>
+                    <X size={20} color="var(--red)" />
                     <div><b>Citizen report: {toilet.latest_issue}</b><small>Ensure this is resolved.</small></div>
                   </div>
                 )}
@@ -500,13 +508,13 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                 </div>
                 
                 <button className="start-cleaning" disabled={busy} onClick={startCleaning}>
-                  {busy ? 'Starting…' : 'START CLEANING'}
+                  {busy ? 'Starting...' : 'START CLEANING'}
                 </button>
-              </>
+              </motion.div>
             )}
 
             {step === 'cleaning' && (
-              <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="mobile-heading" style={{ marginBottom: 5 }}>
                   <p>CLEANING IN PROGRESS</p>
                   <div className="cleaning-timer">
@@ -516,16 +524,14 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                 </div>
                 
                 <div className="reminder-grid">
-                  <span><b>🧹</b><small>Floor mopped</small></span>
-                  <span><b>🚽</b><small>Cubicles washed</small></span>
-                  <span><b>🚰</b><small>Basin wiped</small></span>
-                  <span><b>🧼</b><small>Soap filled</small></span>
-                  <span><b>🗑️</b><small>Bins emptied</small></span>
-                  <span><b>💨</b><small>Smell removed</small></span>
+                  <span><b><Sparkles size={20} color="var(--accent)" /></b><small>Floor mopped</small></span>
+                  <span><b><Droplets size={20} color="var(--accent)" /></b><small>Basin wiped</small></span>
+                  <span><b><Trash2 size={20} color="var(--accent)" /></b><small>Bins emptied</small></span>
+                  <span><b><Wind size={20} color="var(--accent)" /></b><small>Smell removed</small></span>
                 </div>
                 
                 <button className="audio-button" onClick={playMarathiReminder}>
-                  🔊 Play instructions in Marathi
+                  <Volume2 size={16} /> Play instructions in Marathi
                 </button>
                 
                 <div className="privacy-warning">
@@ -534,29 +540,29 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                 </div>
                 
                 {collageData ? (
-                  <>
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                     <div className="collage-preview">
                       <img src={collageData} alt="Collage" />
-                      <span>✓ Evidence ready</span>
+                      <span><CheckCircle size={16} /> Evidence ready</span>
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
                       <button className="secondary" style={{ flex: 1 }} onClick={() => setCollageData(null)}>Retake</button>
                       <button className="complete-button" style={{ flex: 2 }} disabled={busy} onClick={completeCleaning}>
-                        {busy ? 'Uploading…' : '✓ COMPLETE CYCLE'}
+                        {busy ? 'Uploading...' : <><CheckCircle size={16} /> COMPLETE CYCLE</>}
                       </button>
                     </div>
-                  </>
+                  </motion.div>
                 ) : (
-                  <>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                      <button className={photoView === 'site' ? 'mobile-primary' : 'secondary'} style={{ flex: 1 }} onClick={() => setPhotoView('site')}>1. Clean site {siteData ? '✓' : ''}</button>
-                      <button className={photoView === 'selfie' ? 'mobile-primary' : 'secondary'} style={{ flex: 1, opacity: siteData ? 1 : 0.4 }} onClick={() => siteData && setPhotoView('selfie')}>2. Selfie {selfieData ? '✓' : ''}</button>
+                      <button className={photoView === 'site' ? 'mobile-primary' : 'secondary'} style={{ flex: 1 }} onClick={() => setPhotoView('site')}>1. Clean site {siteData ? <CheckCircle size={12} /> : ''}</button>
+                      <button className={photoView === 'selfie' ? 'mobile-primary' : 'secondary'} style={{ flex: 1, opacity: siteData ? 1 : 0.4 }} onClick={() => siteData && setPhotoView('selfie')}>2. Selfie {selfieData ? <CheckCircle size={12} /> : ''}</button>
                     </div>
                     
                     {photoView === 'site' && (
                       <label className={`camera-box ${siteData ? 'has-photo' : ''}`}>
                         {siteData ? <img src={siteData} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : (
-                          <><span>📷</span><b>Take photo of clean facility</b><small>Ensure floor and cubicles are visible</small></>
+                          <><span><Camera size={32} color="var(--text-muted)" /></span><b>Take photo of clean facility</b><small>Ensure floor and cubicles are visible</small></>
                         )}
                         <input type="file" accept="image/*" capture="environment" onChange={e => setSitePhoto(e.target.files[0])} />
                       </label>
@@ -565,19 +571,19 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                     {photoView === 'selfie' && (
                       <label className={`camera-box ${selfieData ? 'has-photo' : ''}`}>
                         {selfieData ? <img src={selfieData} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : (
-                          <><span>🤳</span><b>Take selfie in uniform</b><small>Must match registered face</small></>
+                          <><span><User size={32} color="var(--text-muted)" /></span><b>Take selfie in uniform</b><small>Must match registered face</small></>
                         )}
                         <input type="file" accept="image/*" capture="user" onChange={e => setSelfie(e.target.files[0])} />
                       </label>
                     )}
-                  </>
+                  </motion.div>
                 )}
-              </>
+              </motion.div>
             )}
 
             {step === 'complete' && (
-              <div className="success-page" style={{ paddingTop: 30 }}>
-                <div className="success-check">✓</div>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="success-page" style={{ paddingTop: 30 }}>
+                <div className="success-check"><CheckCircle size={48} color="var(--green)" /></div>
                 <h1>Duty Complete</h1>
                 <p>Excellent work. Your cycle is recorded.</p>
                 
@@ -590,7 +596,7 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
                 </div>
                 
                 <button className="mobile-primary" onClick={closeApp}>Close Shift</button>
-              </div>
+              </motion.div>
             )}
           </main>
         </div>

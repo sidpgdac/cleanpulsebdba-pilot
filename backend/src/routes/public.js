@@ -32,7 +32,11 @@ export default async function publicRoutes(app) {
     }
 
     // Fire-and-forget QR scan tracking (non-blocking)
-    supabase.rpc('increment_qr_scan', { p_toilet_code: code }).catch(() => {});
+    (async () => {
+      try {
+        await supabase.rpc('increment_qr_scan', { p_toilet_code: code });
+      } catch (e) {}
+    })();
 
     return reply.send({
       ...toilet,

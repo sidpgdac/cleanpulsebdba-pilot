@@ -1366,3 +1366,164 @@ tbody tr:hover td { background: var(--bg-elevated); }
   .toilet-grid { grid-template-columns: 1fr; }
   .evidence-log-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ════════════════════════════════════════════
+   MISSING COMPONENT STYLES — v4 PATCH
+   ════════════════════════════════════════════ */
+
+/* ── PERSON / CLEANER CARDS ── */
+.people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+.person-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: 1.5rem 1rem 1rem;
+}
+.person-card h2 { font-size: 0.92rem; font-weight: 600; margin: 0; }
+.person-card p  { font-size: 0.72rem; color: var(--text-tertiary); margin: 0; }
+.person-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #5b54e0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.champion {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  border: 1px solid rgba(34,214,138,0.2);
+  letter-spacing: 0.04em;
+}
+.person-metrics {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+.person-metrics span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.person-metrics small { font-size: 0.62rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
+.person-metrics b { font-size: 0.82rem; font-weight: 600; }
+.wide-button { width: 100%; justify-content: center; padding: 0.52rem; margin-top: 0.5rem; }
+
+/* ── KPI STRIP & PILLS (Complaints) ── */
+.kpi-strip {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.kpi-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  min-width: 90px;
+}
+.kpi-pill strong { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.04em; }
+.kpi-pill span   { font-size: 0.72rem; color: var(--text-tertiary); }
+.kpi-pill.red    { border-color: rgba(242,74,74,0.2);   background: var(--red-dim); }
+.kpi-pill.red strong { color: var(--red); }
+.kpi-pill.amber  { border-color: rgba(245,158,11,0.2);  background: var(--orange-dim); }
+.kpi-pill.amber strong { color: var(--orange); }
+.kpi-pill.green  { border-color: rgba(34,214,138,0.2);  background: var(--green-dim); }
+.kpi-pill.green strong { color: var(--green); }
+.kpi-pill.ink    { border-color: var(--border-medium); }
+
+/* ── COMPLAINT ROWS ── */
+.complaints-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.complaint-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+}
+.complaint-open     { border-left: 3px solid var(--red); }
+.complaint-maint    { border-left: 3px solid var(--orange); }
+.complaint-resolved { border-left: 3px solid var(--green); opacity: 0.7; }
+
+.complaint-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.complaint-body { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.complaint-header { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.complaint-category { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+.complaint-kind-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  letter-spacing: 0.04em;
+}
+.complaint-kind-badge.red  { background: var(--red-dim);  color: var(--red); border: 1px solid rgba(242,74,74,0.2); }
+.complaint-kind-badge.ink  { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+.complaint-toilet { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-secondary); }
+.complaint-meta { display: flex; align-items: center; gap: 0.75rem; font-size: 0.72rem; color: var(--text-tertiary); }
+.complaint-action { display: flex; align-items: center; flex-shrink: 0; }
+
+/* ── DASHBOARD LAYOUT ── */
+.dashboard-layout { display: flex; flex-direction: column; gap: 1.75rem; }
+.dash-section { display: flex; flex-direction: column; }
+
+/* ── TAB ACTIVE (ensure alias works) ── */
+.tab-active {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--text-primary);
+  color: var(--text-primary);
+  font-size: 0.835rem;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  border-radius: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ── LIGHT THEME PATCHES ── */
+[data-theme="light"] .kpi-pill      { background: #fff; }
+[data-theme="light"] .person-card   { background: #fff; }
+[data-theme="light"] .complaint-row { background: #fff; }
+[data-theme="light"] .complaint-resolved { opacity: 0.8; }
+
+/* ── UTILITY ── */
+.dash-section .section-header { margin-bottom: 0.85rem; }
+.ink { color: var(--text-primary); }
+.wide { grid-column: 1 / -1; }

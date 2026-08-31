@@ -225,9 +225,18 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
         setStep('complete');
       } else {
         if (!cleanerToken) return alert('Session token expired. Please restart.');
-        const fetchResponse = await fetch(collageData);
-        const collageBlob = await fetchResponse.blob();
-        const collageFile = new File([collageBlob], 'evidence.jpg', { type: 'image/jpeg' });
+        
+        // Safely convert data URL to File (avoids fetch(dataUrl) which fails on some mobile browsers)
+        const arr = collageData.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const collageFile = new File([u8arr], 'evidence.jpg', { type: mime });
+        
         const { path: sitePhotoPath } = await cleanerApi.uploadPhoto(collageFile, cleanerToken);
 
         let gps = null;

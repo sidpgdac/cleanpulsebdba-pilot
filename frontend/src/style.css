@@ -1542,12 +1542,19 @@ tbody tr:hover td { background: var(--bg-elevated); }
 
 .qr-shell {
   position: relative;
-  width: 100%; height: 100%;
+  width: 100%; height: 100dvh;
   max-width: 440px;
   background: var(--bg-card);
   display: flex; flex-direction: column;
   overflow: hidden;
   box-shadow: 0 0 50px rgba(0,0,0,0.2);
+}
+@media (max-width: 480px) {
+  .qr-shell {
+    max-width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+  }
 }
 .qr-demo-mode .qr-shell {
   height: 850px;

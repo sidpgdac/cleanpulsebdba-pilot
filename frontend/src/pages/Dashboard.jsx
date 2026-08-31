@@ -212,13 +212,14 @@ function RecentEvidence({ facilityId }) {
   );
 }
 
-// ─── Toilet Card ──────────────────────────────────────────────────────────────
+// ─── Toilet Card ────────────────────────────────────────────────────────────
 function ToiletCard({ toilet, onOpen }) {
   const st = getStatus(toilet);
   const Icon = st.icon;
   return (
     <motion.button
-      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
       className={`toilet-card ${st.color}`}
       onClick={() => onOpen(toilet)}
       aria-label={`${toilet.name} — ${st.label}`}
@@ -228,7 +229,9 @@ function ToiletCard({ toilet, onOpen }) {
           <b>{toilet.name}</b>
           <small>{[toilet.floor, toilet.area].filter(Boolean).join(' · ') || toilet.building || '—'}</small>
         </div>
-        <div className={`tc-status-pill ${st.color}`}><Icon size={14} /> {st.label}</div>
+        <div className={`tc-status-pill ${st.color}`}>
+          <Icon size={14} /> {st.label}
+        </div>
       </div>
       <div className="tc-footer">
         <span className="code-tag">{toilet.code}</span>
@@ -284,7 +287,7 @@ function AddFacilityModal({ onClose, onSuccess }) {
 }
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
-export default function Dashboard({ toilets, greeting, firstName, today, onNavigate, facilityId }) {
+export default function Dashboard({ toilets, greeting, firstName, today, onNavigate, facilityId, onToiletClick }) {
   const [showAddFacility, setShowAddFacility] = useState(false);
 
   const stats = useMemo(() => {
@@ -370,7 +373,10 @@ export default function Dashboard({ toilets, greeting, firstName, today, onNavig
           ) : (
             toilets.map((t) => (
               <motion.div key={t.id} variants={itemVariants}>
-                <ToiletCard toilet={t} onOpen={() => onNavigate('facilities')} />
+                <ToiletCard
+                  toilet={t}
+                  onOpen={onToiletClick || (() => onNavigate('facilities'))}
+                />
               </motion.div>
             ))
           )}

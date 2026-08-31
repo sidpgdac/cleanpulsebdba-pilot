@@ -6,8 +6,10 @@ import Facilities from '../pages/FacilitySetup.jsx';
 import Cleaners from '../pages/Cleaners.jsx';
 import Complaints from '../pages/Complaints.jsx';
 import Experience from '../pages/public/QRFlow.jsx';
+import ToiletDetailPanel from '../pages/ToiletDetailPanel.jsx';
+import { AnimatePresence } from 'framer-motion';
 
-import { LayoutDashboard, Building2, Users, AlertCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, AlertCircle, LogOut, Sun, Moon } from 'lucide-react';
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 const NAV = [
@@ -101,6 +103,15 @@ export default function CleanPulseApp() {
   const [toast, setToast] = useState('');
   const [facilityName, setFacilityName] = useState('');
   const [openComplaints, setOpenComplaints] = useState(0);
+  const [selectedToilet, setSelectedToilet] = useState(null);
+
+  // ── Theme ──
+  const [theme, setTheme] = useState(() => localStorage.getItem('cp-theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cp-theme', theme);
+  }, [theme]);
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   const notify = useCallback((msg) => {
     setToast(msg);
@@ -191,6 +202,7 @@ export default function CleanPulseApp() {
             onNavigate={navigate}
             onScan={setScan}
             onToiletsChanged={() => loadData(profile)}
+            onToiletClick={setSelectedToilet}
           />
         );
       case 'facilities':
@@ -198,12 +210,15 @@ export default function CleanPulseApp() {
           <Facilities
             {...sharedProps}
             onToiletsChanged={() => loadData(profile)}
+            onToiletClick={setSelectedToilet}
           />
         );
       case 'cleaners':
         return <Cleaners facilityId={profile.facility_id} notify={notify} />;
       case 'complaints':
         return <Complaints facilityId={profile.facility_id} notify={notify} />;
+      case 'cleaning':
+        return null; // handled via navigate
       default:
         return null;
     }
@@ -239,6 +254,14 @@ export default function CleanPulseApp() {
             <small>{profile.role === 'admin' ? 'Admin' : 'Supervisor'} · {facilityName}</small>
           </div>
           <button
+            className="theme-toggle"
+            aria-label="Toggle theme"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <button
             aria-label="Sign out"
             title="Sign out"
             onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
@@ -267,6 +290,19 @@ export default function CleanPulseApp() {
           </button>
         ))}
       </nav>
+
+      {/* ── Toilet Detail Panel ── */}
+      <AnimatePresence>
+        {selectedToilet && (
+          <ToiletDetailPanel
+            key={selectedToilet.id}
+            toilet={selectedToilet}
+            onClose={() => setSelectedToilet(null)}
+            onNavigate={(v) => { navigate(v); setSelectedToilet(null); }}
+            notify={notify}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── QR demo experience ── */}
       {scan && scannedToilet && (

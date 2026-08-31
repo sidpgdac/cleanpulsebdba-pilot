@@ -196,7 +196,7 @@ function AddToiletForm({ facilityId, onCreated, notify }) {
 }
 
 // ─── Editable Toilet Row ───────────────────────────────────────────────────────
-function ToiletRow({ toilet, onDeactivate, notify }) {
+function ToiletRow({ toilet, onDeactivate, notify, onToiletClick }) {
   const [editing, setEditing] = useState(null); // field name being edited
   const [form, setForm] = useState(toilet);
   
@@ -274,6 +274,11 @@ function ToiletRow({ toilet, onDeactivate, notify }) {
       </td>
       <td>
         <div style={{ display: 'flex', gap: 6 }}>
+          {onToiletClick && (
+            <button className="secondary" style={{ padding: '4px 10px', fontSize: 10 }} onClick={() => onToiletClick(toilet)}>
+              Detail
+            </button>
+          )}
           <button className="primary" style={{ padding: '4px 10px', fontSize: 10 }} onClick={() => downloadQR(toilet)}>↓ QR</button>
           <button className="ghost" style={{ padding: '4px 10px', fontSize: 10, color: 'var(--red)' }} onClick={() => onDeactivate(toilet)}>Deactivate</button>
         </div>
@@ -283,7 +288,7 @@ function ToiletRow({ toilet, onDeactivate, notify }) {
 }
 
 // ─── Facilities Page ─────────────────────────────────────────────────────────
-export default function Facilities({ toilets, setToilets, facilityId, facilityName, notify, onToiletsChanged }) {
+export default function Facilities({ toilets, setToilets, facilityId, facilityName, notify, onToiletsChanged, onToiletClick }) {
   const [tab, setTab] = useState('toilets'); // 'toilets' | 'add' | 'info'
   const [facilityInfo, setFacilityInfo] = useState(null);
   const [search, setSearch] = useState('');
@@ -389,10 +394,11 @@ export default function Facilities({ toilets, setToilets, facilityId, facilityNa
                       <td colSpan="6" style={{ padding: 0 }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                           <tbody>
-                            <ToiletRow
+                          <ToiletRow
                               toilet={t}
                               onDeactivate={deactivateToilet}
                               notify={notify}
+                              onToiletClick={onToiletClick}
                             />
                           </tbody>
                         </table>

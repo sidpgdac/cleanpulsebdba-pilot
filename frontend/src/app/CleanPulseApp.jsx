@@ -1,25 +1,28 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/api.js';
-import { statusMeta } from '../lib/data.js';
 import Dashboard from '../pages/Dashboard.jsx';
 import Facilities from '../pages/FacilitySetup.jsx';
 import Cleaners from '../pages/Cleaners.jsx';
 import Complaints from '../pages/Complaints.jsx';
+import Cleaning from '../pages/Cleaning.jsx';
 import Experience from '../pages/public/QRFlow.jsx';
 import ToiletDetailPanel from '../pages/ToiletDetailPanel.jsx';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  LayoutDashboard, Building2, Users, AlertCircle,
+  LogOut, Sun, Moon, ClipboardList
+} from 'lucide-react';
 
-import { LayoutDashboard, Building2, Users, AlertCircle, LogOut, Sun, Moon } from 'lucide-react';
-
-// ─── Navigation ──────────────────────────────────────────────────────────────
+// ─── Navigation items ─────────────────────────────────────────────────────────
 const NAV = [
-  { id: 'dashboard',   icon: <LayoutDashboard size={18} />, label: 'Dashboard'   },
-  { id: 'facilities',  icon: <Building2 size={18} />, label: 'Facilities'  },
-  { id: 'cleaners',    icon: <Users size={18} />, label: 'Cleaners'    },
-  { id: 'complaints',  icon: <AlertCircle size={18} />, label: 'Complaints'  },
+  { id: 'dashboard',  icon: <LayoutDashboard size={15} />, label: 'Dashboard'  },
+  { id: 'facilities', icon: <Building2     size={15} />, label: 'Facilities' },
+  { id: 'cleaning',   icon: <ClipboardList size={15} />, label: 'Evidence'   },
+  { id: 'cleaners',   icon: <Users         size={15} />, label: 'Cleaners'   },
+  { id: 'complaints', icon: <AlertCircle   size={15} />, label: 'Complaints' },
 ];
 
-// ─── Login ────────────────────────────────────────────────────────────────────
+// ─── Login Page ───────────────────────────────────────────────────────────────
 function LoginPage({ onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,6 +58,7 @@ function LoginPage({ onSuccess }) {
         </div>
         <footer>BMC CleanPulse · Pilot Programme · BDBA Shatabdi Hospital</footer>
       </div>
+
       <div className="login-form">
         <div>
           <p>FACILITY ADMINISTRATOR</p>
@@ -62,15 +66,21 @@ function LoginPage({ onSuccess }) {
           <span>Command centre access for authorised administrators.</span>
           <form onSubmit={submit}>
             <label>Email address
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@hospital.gov.in" />
             </label>
             <label>Password
               <div className="password-field">
-                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} />
+                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
             </label>
-            {error && <div style={{ marginTop: 12, padding: '8px 12px', background: 'var(--red-soft)', color: 'var(--red)', borderRadius: 8, fontSize: 9 }}>{error}</div>}
-            <button className="login-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in to CleanPulse →'}</button>
+            {error && (
+              <div style={{ padding: '8px 12px', background: 'var(--red-dim)', color: 'var(--red)', borderRadius: 8, fontSize: '0.8rem', border: '1px solid rgba(242,74,74,0.2)' }}>
+                {error}
+              </div>
+            )}
+            <button className="login-button" disabled={busy}>
+              {busy ? 'Signing in…' : 'Sign in to CleanPulse →'}
+            </button>
           </form>
           <p className="security-note">Secured · Role-based access · Audit logged</p>
         </div>
@@ -87,7 +97,7 @@ function InvalidScan({ code, onClose }) {
         <span>×</span>
         <h1>Invalid CleanPulse QR</h1>
         <p><b>{code}</b> is not an active toilet ID.</p>
-        <button className="mobile-primary" onClick={onClose}>Close</button>
+        <button className="primary" onClick={onClose}>Close</button>
       </div>
     </div>
   );
@@ -105,7 +115,7 @@ export default function CleanPulseApp() {
   const [openComplaints, setOpenComplaints] = useState(0);
   const [selectedToilet, setSelectedToilet] = useState(null);
 
-  // ── Theme ──
+  // ── Theme ──────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState(() => localStorage.getItem('cp-theme') || 'dark');
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -113,6 +123,7 @@ export default function CleanPulseApp() {
   }, [theme]);
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
+  // ── Notifications ──────────────────────────────────────────────────────────
   const notify = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2800);
@@ -120,6 +131,7 @@ export default function CleanPulseApp() {
 
   const navigate = useCallback((next) => setView(next), []);
 
+  // ── Data ───────────────────────────────────────────────────────────────────
   async function loadData(prof) {
     if (!prof?.facility_id) return;
     try {
@@ -131,21 +143,17 @@ export default function CleanPulseApp() {
       setToilets(toiletRes.data || []);
       setFacilityName(facRes.data?.name || 'Facility');
       setOpenComplaints((feedbackRes.data || []).length);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   }
 
   async function bootstrap() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
-
     const { data: p } = await supabase
       .from('profiles')
       .select('id,full_name,role,facility_id,facilities(name)')
       .eq('id', session.user.id)
       .single();
-
     if (p && (p.role === 'admin' || p.role === 'supervisor')) {
       setProfile(p);
       await loadData(p);
@@ -155,23 +163,23 @@ export default function CleanPulseApp() {
 
   useEffect(() => { bootstrap(); }, []);
 
-  // Realtime subscription — re-load when any toilet changes
+  // Realtime subscriptions
   useEffect(() => {
     if (!profile?.facility_id) return;
     const ch = supabase
       .channel(`cp-admin-${profile.facility_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'toilets', filter: `facility_id=eq.${profile.facility_id}` }, () => loadData(profile))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'toilets',  filter: `facility_id=eq.${profile.facility_id}` }, () => loadData(profile))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback', filter: `facility_id=eq.${profile.facility_id}` }, () => loadData(profile))
       .subscribe();
     return () => supabase.removeChannel(ch);
   }, [profile?.facility_id]);
 
-  // Loading spinner
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeContent: 'center', justifyItems: 'center', gap: 15, background: 'var(--canvas)' }}>
-        <div style={{ width: 42, height: 42, border: '3px solid var(--green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <b style={{ fontSize: 11, letterSpacing: '0.1em', color: 'var(--muted)' }}>OPENING CLEANPULSE</b>
+      <div className="loadingScreen">
+        <div style={{ width: 40, height: 40, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        <b style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>OPENING CLEANPULSE</b>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
@@ -179,15 +187,13 @@ export default function CleanPulseApp() {
 
   if (!profile) return <LoginPage onSuccess={bootstrap} />;
 
-  // User display
+  // ── User info ──────────────────────────────────────────────────────────────
   const nameWords = (profile.full_name || 'Admin').split(' ');
   const userInitials = nameWords.map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-
   const scannedToilet = scan ? toilets.find(t => t.code === scan || t.id === scan) : null;
-
   const sharedProps = { toilets, setToilets, notify, facilityId: profile.facility_id, facilityName };
 
   function renderContent() {
@@ -196,8 +202,7 @@ export default function CleanPulseApp() {
         return (
           <Dashboard
             {...sharedProps}
-            greeting={greeting}
-            today={today}
+            greeting={greeting} today={today}
             firstName={nameWords[0]}
             onNavigate={navigate}
             onScan={setScan}
@@ -213,70 +218,95 @@ export default function CleanPulseApp() {
             onToiletClick={setSelectedToilet}
           />
         );
+      case 'cleaning':
+        return <Cleaning facilityId={profile.facility_id} notify={notify} />;
       case 'cleaners':
         return <Cleaners facilityId={profile.facility_id} notify={notify} />;
       case 'complaints':
         return <Complaints facilityId={profile.facility_id} notify={notify} />;
-      case 'cleaning':
-        return null; // handled via navigate
       default:
         return null;
     }
   }
 
   return (
-    <main className="app-shell">
-      {/* ── Sidebar ── */}
-      <aside className="sidebar">
-        <div className="brand-mark">
-          <span>CP</span>
-          <div><b>CleanPulse</b><small>BMC HEALTH</small></div>
+    <div className="app-shell">
+      {/* ══════════════════════════════════════════════════════════
+          TOP NAVIGATION BAR
+          ══════════════════════════════════════════════════════════ */}
+      <header className="topbar">
+        {/* Brand */}
+        <div className="topbar-brand">
+          <div className="topbar-logo">CP</div>
+          <div>
+            <span>CleanPulse</span>
+            <small>BMC HEALTH</small>
+          </div>
         </div>
 
-        <nav aria-label="Main navigation">
+        <div className="topbar-divider" />
+        <span className="topbar-facility">{facilityName}</span>
+
+        {/* Nav pills — desktop */}
+        <nav className="topbar-nav" aria-label="Main navigation">
           {NAV.map(item => (
             <button
               key={item.id}
-              className={view === item.id ? 'nav-active' : ''}
+              className={`nav-pill ${view === item.id ? 'active' : ''}`}
               onClick={() => navigate(item.id)}
             >
-              <span>{item.icon}</span>
+              {item.icon}
               {item.label}
-              {item.id === 'complaints' && openComplaints > 0 && <em>{openComplaints}</em>}
+              {item.id === 'complaints' && openComplaints > 0 && (
+                <span className="nav-badge">{openComplaints}</span>
+              )}
             </button>
           ))}
         </nav>
 
-        <div className="side-footer">
-          <span className="avatar">{userInitials}</span>
-          <div className="profile-button">
-            <b>{profile.full_name}</b>
-            <small>{profile.role === 'admin' ? 'Admin' : 'Supervisor'} · {facilityName}</small>
-          </div>
-          <button
-            className="theme-toggle"
-            aria-label="Toggle theme"
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            onClick={toggleTheme}
-          >
+        {/* Right side */}
+        <div className="topbar-end">
+          {/* Theme toggle */}
+          <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Light mode' : 'Dark mode'} aria-label="Toggle theme">
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
-          <button
-            aria-label="Sign out"
-            title="Sign out"
-            onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
-          ><LogOut size={16} /></button>
-        </div>
-      </aside>
 
-      {/* ── Workspace ── */}
-      <section className="workspace">
+          {/* User chip */}
+          <div className="user-chip">
+            <div className="user-avatar">{userInitials}</div>
+            <span className="user-chip-name">{nameWords[0]}</span>
+          </div>
+
+          {/* Sign out */}
+          <button className="signout-btn" title="Sign out" aria-label="Sign out"
+            onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}>
+            <LogOut size={15} />
+          </button>
+        </div>
+      </header>
+
+      {/* ══════════════════════════════════════════════════════════
+          WORKSPACE
+          ══════════════════════════════════════════════════════════ */}
+      <main className="workspace">
         <div className="content">
-          {renderContent()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </section>
+      </main>
 
-      {/* ── Mobile bottom nav ── */}
+      {/* ══════════════════════════════════════════════════════════
+          MOBILE BOTTOM NAV
+          ══════════════════════════════════════════════════════════ */}
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {NAV.map(item => (
           <button
@@ -284,9 +314,11 @@ export default function CleanPulseApp() {
             className={view === item.id ? 'active' : ''}
             onClick={() => navigate(item.id)}
           >
-            <span>{item.icon}</span>
+            {item.icon}
             {item.label}
-            {item.id === 'complaints' && openComplaints > 0 && <em className="mobile-badge">{openComplaints}</em>}
+            {item.id === 'complaints' && openComplaints > 0 && (
+              <em className="mobile-badge">{openComplaints}</em>
+            )}
           </button>
         ))}
       </nav>
@@ -304,7 +336,7 @@ export default function CleanPulseApp() {
         )}
       </AnimatePresence>
 
-      {/* ── QR demo experience ── */}
+      {/* ── QR scan experience ── */}
       {scan && scannedToilet && (
         <Experience
           toilet={scannedToilet}
@@ -314,16 +346,23 @@ export default function CleanPulseApp() {
           demo={true}
         />
       )}
-      {scan && !scannedToilet && (
-        <InvalidScan code={scan} onClose={() => setScan(null)} />
-      )}
+      {scan && !scannedToilet && <InvalidScan code={scan} onClose={() => setScan(null)} />}
 
       {/* ── Toast ── */}
-      {toast && (
-        <div className="toast" role="status">
-          <span>✓</span>{toast}
-        </div>
-      )}
-    </main>
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            className="toast"
+            role="status"
+            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+          >
+            <span>✓</span>{toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

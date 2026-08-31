@@ -66,47 +66,130 @@ function drawCover(ctx, image, x, y, w, h) {
   ctx.drawImage(image, (image.width - sw) / 2, (image.height - sh) / 2, sw, sh, x, y, w, h);
 }
 
-export async function buildEvidenceCollage(cleanSrc, selfieSrc, toiletId, toiletName, floor, dept, cleanerName) {
+export async function buildEvidenceCollage(
+  cleanSrc, selfieSrc,
+  toiletId, toiletName, floor, dept, cleanerName,
+  gpsLat = null, gpsLng = null, gpsAddress = null
+) {
   const [clean, selfie] = await Promise.all([loadImage(cleanSrc), loadImage(selfieSrc)]);
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
   canvas.height = 900;
   const ctx = canvas.getContext('2d');
+
+  // Background — full clean-site photo
   drawCover(ctx, clean, 0, 0, 1200, 900);
-  const shade = ctx.createLinearGradient(0, 650, 0, 900);
-  shade.addColorStop(0, 'rgba(4,28,21,0)');
-  shade.addColorStop(1, 'rgba(4,28,21,.92)');
+
+  // Gradient overlay at bottom for readability
+  const shade = ctx.createLinearGradient(0, 580, 0, 900);
+  shade.addColorStop(0, 'rgba(0,0,0,0)');
+  shade.addColorStop(1, 'rgba(0,0,0,0.88)');
   ctx.fillStyle = shade;
-  ctx.fillRect(0, 620, 1200, 280);
+  ctx.fillRect(0, 580, 1200, 320);
+
+  // Selfie inset thumbnail
   ctx.save();
   ctx.beginPath();
-  if ('roundRect' in ctx) ctx.roundRect(850, 520, 310, 330, 24);
-  else ctx.rect(850, 520, 310, 330);
+  if ('roundRect' in ctx) ctx.roundRect(848, 520, 318, 338, 20);
+  else ctx.rect(848, 520, 318, 338);
   ctx.clip();
-  drawCover(ctx, selfie, 850, 520, 310, 330);
+  drawCover(ctx, selfie, 848, 520, 318, 338);
   ctx.restore();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 10;
+
+  // Selfie border
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 8;
   ctx.beginPath();
-  if ('roundRect' in ctx) ctx.roundRect(850, 520, 310, 330, 24);
-  else ctx.rect(850, 520, 310, 330);
+  if ('roundRect' in ctx) ctx.roundRect(848, 520, 318, 338, 20);
+  else ctx.rect(848, 520, 318, 338);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(4,28,21,.82)';
-  ctx.fillRect(850, 790, 310, 60);
+
+  // Selfie name label
+  ctx.fillStyle = 'rgba(0,0,0,0.80)';
+  ctx.fillRect(848, 810, 318, 48);
   ctx.fillStyle = '#fff';
-  ctx.font = '700 24px Arial';
-  ctx.fillText(cleanerName, 872, 827);
+  ctx.font = '600 22px Arial';
+  ctx.fillText(cleanerName, 868, 841);
+
+  // ── TEXT METADATA BLOCK ──
   const stamp = new Date().toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
-  ctx.fillStyle = '#fff';
+
+  ctx.fillStyle = '#ffffff';
   ctx.font = '700 30px Arial';
-  ctx.fillText('BMC CleanPulse', 42, 768);
-  ctx.font = '600 23px Arial';
-  ctx.fillText(`${toiletId}  ·  ${toiletName}`, 42, 809);
+  ctx.fillText('BMC CleanPulse', 42, 750);
+
+  ctx.font = '600 24px Arial';
+  ctx.fillText(`${toiletId}  ·  ${toiletName}`, 42, 790);
+
   ctx.font = '500 20px Arial';
-  ctx.fillStyle = '#d3ebe1';
-  ctx.fillText(`${floor} · ${dept}  |  ${stamp}`, 42, 846);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fillText(`${floor || ''}${floor && dept ? ' · ' : ''}${dept || ''}  |  ${stamp}`, 42, 826);
+
+  // ── GPS STAMP ──
+  if (gpsLat && gpsLng) {
+    const coordStr = `${Number(gpsLat).toFixed(5)}°N, ${Number(gpsLng).toFixed(5)}°E`;
+    const locStr = gpsAddress ? `  ·  ${gpsAddress}` : '';
+
+    // GPS badge background
+    const gpsText = `\u{1F4CD}  ${coordStr}${locStr}`;
+    ctx.font = '500 19px Arial';
+    const textWidth = Math.min(ctx.measureText(gpsText).width + 32, 820);
+
+    ctx.fillStyle = 'rgba(34,197,94,0.25)';
+    ctx.beginPath();
+    if ('roundRect' in ctx) ctx.roundRect(36, 848, textWidth, 34, 6);
+    else ctx.rect(36, 848, textWidth, 34);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(34,197,94,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if ('roundRect' in ctx) ctx.roundRect(36, 848, textWidth, 34, 6);
+    else ctx.rect(36, 848, textWidth, 34);
+    ctx.stroke();
+
+    ctx.fillStyle = '#86efac';
+    ctx.font = '500 18px Arial';
+    ctx.fillText(gpsText, 52, 870);
+  } else {
+    // No GPS — show unverified badge
+    ctx.fillStyle = 'rgba(245,158,11,0.20)';
+    ctx.beginPath();
+    if ('roundRect' in ctx) ctx.roundRect(36, 848, 260, 34, 6);
+    else ctx.rect(36, 848, 260, 34);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(245,158,11,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#fcd34d';
+    ctx.font = '500 18px Arial';
+    ctx.fillText('\u26A0  GPS not verified', 52, 870);
+  }
+
   return canvas.toDataURL('image/jpeg', 0.9);
 }
+
+/** Reverse-geocode lat/lng to a short address using OSM Nominatim (free, no API key) */
+export async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    const data = await res.json();
+    const a = data.address || {};
+    // Build a compact label like "BDBA Hospital, Bidar"
+    const parts = [
+      a.amenity || a.building || a.road,
+      a.suburb || a.neighbourhood,
+      a.city || a.town || a.village || a.district,
+    ].filter(Boolean);
+    return parts.slice(0, 2).join(', ');
+  } catch {
+    return null;
+  }
+}
+

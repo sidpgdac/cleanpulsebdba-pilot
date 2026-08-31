@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase, cleanerApi, publicApi } from '../../lib/api.js';
-import { statusMeta, toiletTypeMeta, issueOptions, initials, buildEvidenceCollage } from '../../lib/data.js';
+import { statusMeta, toiletTypeMeta, issueOptions, initials, buildEvidenceCollage, reverseGeocode } from '../../lib/data.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Loader, CheckCircle, Smile, Meh, Frown, Sparkles, Droplets, Trash2, 
@@ -39,6 +39,8 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
   const [busy, setBusy] = useState(false);
   const [photoView, setPhotoView] = useState('site');
   const [marathiAudio, setMarathiAudio] = useState(null);
+  // GPS state — captured when cleaner starts cleaning step
+  const [gpsData, setGpsData] = useState({ lat: null, lng: null, address: null });
 
   useEffect(() => {
     if (demo) return;
@@ -61,6 +63,22 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
     return () => clearInterval(t);
   }, [step, session]);
 
+  // Capture GPS as soon as cleaner reaches cleaning step (best accuracy window)
+  useEffect(() => {
+    if (step !== 'cleaning') return;
+    if (gpsData.lat) return; // already captured
+    navigator.geolocation?.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const address = await reverseGeocode(lat, lng);
+        setGpsData({ lat, lng, address });
+      },
+      () => {}, // silently ignore denial
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, [step]);
+
   const loadFile = (file, setter) => {
     if (!file) return;
     const reader = new FileReader();
@@ -75,8 +93,11 @@ export default function QRFlow({ toilet: demoToilet, onClose, onUpdate, notify, 
 
   useEffect(() => {
     if (siteData && selfieData && toilet && selectedCleaner) {
-      buildEvidenceCollage(siteData, selfieData, toilet.code, toilet.name, toilet.floor, toilet.area, selectedCleaner.full_name)
-        .then(setCollageData).catch(console.error);
+      buildEvidenceCollage(
+        siteData, selfieData,
+        toilet.code, toilet.name, toilet.floor, toilet.area, selectedCleaner.full_name,
+        gpsData.lat, gpsData.lng, gpsData.address
+      ).then(setCollageData).catch(console.error);
     }
   }, [siteData, selfieData]);
 

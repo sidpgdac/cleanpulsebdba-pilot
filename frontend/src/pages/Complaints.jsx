@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/api.js';
 import { relativeTime } from '../lib/data.js';
+import { Loader, CheckCircle2 } from 'lucide-react';
 
 const KIND_LABEL = {
   HOUSEKEEPING: 'Cleaning',
@@ -128,12 +129,16 @@ export default function Complaints({ facilityId, notify }) {
 
       {/* Complaint list */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontSize: 10 }}>Loading…</div>
+        <div className="complaints-loading panel">
+          <div className="complaints-loading-icon"><Loader size={18} className="spin" /></div>
+          <div><b>Syncing citizen signal feed</b><span>Checking new housekeeping and maintenance reports…</span></div>
+          <i /><i /><i />
+        </div>
       )}
 
       {!loading && visible.length === 0 && (
         <div className="panel" style={{ padding: 40, textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>✓</div>
+          <div className="complaints-clear-icon"><CheckCircle2 size={28} /></div>
           <b style={{ fontSize: 13 }}>
             {filter === 'OPEN' || filter === 'ALL'
               ? 'No open complaints — all clear!'

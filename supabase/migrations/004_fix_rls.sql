@@ -61,3 +61,15 @@ using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.rol
 drop policy if exists "cleaners delete" on public.cleaners;
 create policy "cleaners delete" on public.cleaners for delete to authenticated 
 using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+-- 7. Allow admins to read cleaning_sessions
+drop policy if exists "cleaning_sessions read admin" on public.cleaning_sessions;
+create policy "cleaning_sessions read admin" on public.cleaning_sessions for select to authenticated
+using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin' and p.facility_id = cleaning_sessions.facility_id));
+
+-- Allow cleaners to read their own sessions (optional but good practice)
+drop policy if exists "cleaning_sessions read cleaner" on public.cleaning_sessions;
+create policy "cleaning_sessions read cleaner" on public.cleaning_sessions for select to authenticated
+using (cleaner_id::text = auth.uid()::text);
+
+-- Allow public to insert/update cleaning sessions? No, backend service role does this.

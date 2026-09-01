@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, supabase } from '../lib/api.js';
 import { initials, relativeTime } from '../lib/data.js';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Download, UserPlus } from 'lucide-react';
+import { Plus, Download, UserPlus, UserCheck, UserX, ShieldCheck, Loader } from 'lucide-react';
 
 export default function Cleaners({ facilityId, notify }) {
   const [cleaners, setCleaners] = useState([]);
@@ -11,6 +11,7 @@ export default function Cleaners({ facilityId, notify }) {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ full_name: '', pin: '', pin_confirm: '' });
   const [formError, setFormError] = useState('');
+  const activeCount = cleaners.filter(cleaner => cleaner.active).length;
 
   async function loadCleaners() {
     if (!facilityId) return;
@@ -93,6 +94,13 @@ export default function Cleaners({ facilityId, notify }) {
         </div>
       </div>
 
+      <div className="roster-stats">
+        <div className="roster-stat roster-stat-indigo"><div><UserPlus size={16} /></div><span><b>{cleaners.length}</b><small>Total workforce</small></span></div>
+        <div className="roster-stat roster-stat-green"><div><UserCheck size={16} /></div><span><b>{activeCount}</b><small>Active today</small></span></div>
+        <div className="roster-stat roster-stat-slate"><div><UserX size={16} /></div><span><b>{cleaners.length - activeCount}</b><small>Inactive</small></span></div>
+        <div className="roster-security"><ShieldCheck size={18} /><div><b>Secure workforce access</b><small>Every cleaner PIN is encrypted and audit logged.</small></div></div>
+      </div>
+
       <AnimatePresence>
         {showAdd && (
           <motion.form 
@@ -152,10 +160,10 @@ export default function Cleaners({ facilityId, notify }) {
 
       <motion.div className="people-grid" initial="hidden" animate="show" variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }}>
         {loading ? (
-          <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Loading…</div>
+          <div className="roster-loading"><Loader size={18} className="spin" /><b>Syncing workforce roster</b><span>Checking active staff and access status…</span></div>
         ) : cleaners.length === 0 ? (
-          <div style={{ gridColumn: 'span 4', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-            No cleaners registered yet. Add your first cleaner to begin operations.
+          <div className="roster-loading">
+            <UserPlus size={22} /><b>No cleaners registered</b><span>Add your first cleaner to begin monitored operations.</span>
           </div>
         ) : cleaners.map(c => (
           <motion.article className="person-card panel" key={c.id} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: "spring" } } }}>
